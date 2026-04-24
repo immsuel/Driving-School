@@ -41,6 +41,11 @@ const LICENSE_TYPE_MAP: Record<string, string> = {
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 
 async function fetchInstructors(licenseType: string): Promise<Instructor[]> {
+  console.log("ENV CHECK:", {
+    base: process.env.AIRTABLE_BASE_ID,
+    key: process.env.AIRTABLE_API_KEY ? "set" : "MISSING",
+    table: process.env.AIRTABLE_INSTRUCTORS_TABLE_ID,
+  })
   // Airtable formula: instructor must be Active AND cover the requested license type
   const formula = encodeURIComponent(
     `AND({Active} = 1, FIND("${licenseType}", ARRAYJOIN({License Types}, ",")) > 0)`
@@ -56,6 +61,11 @@ async function fetchInstructors(licenseType: string): Promise<Instructor[]> {
     cache: "no-store",
     next: { revalidate: 60 },
   })
+
+  console.log("Airtable status:", res.status)
+const rawData = await res.json()
+console.log("Airtable response:", JSON.stringify(rawData, null, 2))
+return [] 
 
   if (!res.ok) {
     console.error("Airtable fetch failed:", res.status, await res.text())
@@ -76,6 +86,9 @@ async function fetchInstructors(licenseType: string): Promise<Instructor[]> {
       workingDays: r.fields["Working Days"] ?? [],
       maxDailyHours: r.fields["Max Daily Hours"] ?? 8,
     }))
+
+
+    
 }
 
 export interface AssignedInstructor {

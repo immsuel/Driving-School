@@ -57,7 +57,11 @@ export default function BookingForm() {
   const [selectedPackage, setSelectedPackage] = useState<any | null>(null)
   const [hoursPerDay, setHoursPerDay] = useState("1")
   const [sessions, setSessions] = useState<{ date: Date; time: string; duration: number }[]>([])
-  const [currentDate, setCurrentDate] = useState<Date | undefined>(new Date())
+  // FIX: Start as undefined so the availability useEffect doesn't fire until
+  // the user actually selects a date. Previously set to new Date(), which
+  // triggered an Airtable → iCal fetch immediately on entering step 1
+  // before the user had chosen anything, causing the timeout cascade.
+  const [currentDate, setCurrentDate] = useState<Date | undefined>(undefined)
   const [currentTime, setCurrentTime] = useState("")
   const [busySlots, setBusySlots] = useState<string[]>([])
   const [availableOnDay, setAvailableOnDay] = useState(true)
@@ -93,6 +97,9 @@ export default function BookingForm() {
 
   // FIX 3: Cancel any in-flight availability request when the date changes; disable date
   // picker while loading so concurrent calls can't be fired.
+  // FIX: Guard added — currentDate must be defined before we fetch. This
+  // prevents the effect from running on initial render when currentDate is
+  // undefined (previously new Date() caused an immediate fetch on mount).
   useEffect(() => {
     if (!currentDate || step !== 1 || !selectedPackage) return
 
@@ -368,6 +375,17 @@ export default function BookingForm() {
                   </p>
                 </div>
               )}
+
+              {/* Prompt user to pick a date if they haven't yet */}
+              {!currentDate && (
+                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 flex items-start gap-3">
+                  <AlertCircle className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
+                  <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wide leading-relaxed">
+                    Select a date above to see available time slots.
+                  </p>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
                 {WORKING_HOURS.map((time, idx) => {
                   const requestedRange = WORKING_HOURS.slice(idx, idx + nextSessionDuration)
@@ -378,7 +396,8 @@ export default function BookingForm() {
                       getBlockedSlotsForSelection(s.time, s.duration).some((t) => requestedRange.includes(t))
                   )
                   const isOutOfBounds = requestedRange.length < nextSessionDuration
-                  const isDisabled = isBlockedByGoogle || isBlockedByItinerary || isOutOfBounds
+                  // Also disable all slots if no date has been picked yet
+                  const isDisabled = !currentDate || isBlockedByGoogle || isBlockedByItinerary || isOutOfBounds
 
                   return (
                     <button
@@ -395,7 +414,7 @@ export default function BookingForm() {
                     >
                       {isCheckingAvailability ? (
                         <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : isDisabled ? (
+                      ) : isDisabled && currentDate ? (
                         <>
                           <AlertCircle className="h-3 w-3" />
                           <span className="text-[8px]">TAKEN</span>

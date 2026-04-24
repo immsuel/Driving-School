@@ -95,6 +95,7 @@ export async function getBusySlots(dateStr: string, icalUrls: string[]): Promise
 
   await Promise.all(
     icalUrls.map(async (url) => {
+      console.log("🔍 Fetching iCal URL:", url)
       try {
         const res = await fetch(url, {
           // FIX: Added cache: "no-store" so Next.js / Vercel's fetch extension
