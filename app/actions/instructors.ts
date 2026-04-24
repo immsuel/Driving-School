@@ -65,7 +65,7 @@ async function fetchInstructors(licenseType: string): Promise<Instructor[]> {
   console.log("Airtable status:", res.status)
 const rawData = await res.json()
 console.log("Airtable response:", JSON.stringify(rawData, null, 2))
-return [] 
+
 
   if (!res.ok) {
     console.error("Airtable fetch failed:", res.status, await res.text())
