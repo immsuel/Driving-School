@@ -1,5 +1,5 @@
 // app/api/booking/route.ts
-// FIX 5: Proxies booking payloads to Make so the webhook URL is never exposed client-side.
+// Proxies booking payloads to Make so the webhook URL is never exposed client-side.
 // Set MAKE_WEBHOOK_URL in your .env.local — it is only ever read server-side.
 
 import { NextRequest, NextResponse } from "next/server"
@@ -20,14 +20,17 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const makeResponse = fetch(MAKE_WEBHOOK_URL, {
+    // FIX: await the fetch so the webhook actually fires before the serverless
+    // function freezes. Without await, the request is dropped on Vercel/Edge
+    // even though it works fine on localhost (long-lived process).
+    await fetch(MAKE_WEBHOOK_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
-    }).catch(err => console.error("Make webhook failed:", err))
+    })
 
-    return NextResponse.json({ ok: true })
-
+    // FIX: removed duplicate `return NextResponse.json({ ok: true })` which
+    // was dead code and caused a TypeScript error in strict mode.
     return NextResponse.json({ ok: true })
   } catch (err: any) {
     if (err.name === "TimeoutError") {

@@ -97,6 +97,10 @@ export async function getBusySlots(dateStr: string, icalUrls: string[]): Promise
     icalUrls.map(async (url) => {
       try {
         const res = await fetch(url, {
+          // FIX: Added cache: "no-store" so Next.js / Vercel's fetch extension
+          // does not block or incorrectly cache this request on the Edge runtime.
+          // next.revalidate still controls ISR behaviour when supported.
+          cache: "no-store",
           next: { revalidate: 300 },
           signal: AbortSignal.timeout(8_000), // fail after 8 seconds
         })

@@ -50,7 +50,10 @@ async function fetchInstructors(licenseType: string): Promise<Instructor[]> {
 
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` },
-    // Cache for 1 minute — instructor records don't change often
+    // FIX: Added cache: "no-store" so Next.js / Vercel's fetch extension does
+    // not block or incorrectly cache this request on the Edge runtime.
+    // next.revalidate still controls ISR behaviour when supported.
+    cache: "no-store",
     next: { revalidate: 60 },
   })
 
