@@ -62,20 +62,17 @@ async function fetchInstructors(licenseType: string): Promise<Instructor[]> {
     next: { revalidate: 60 },
   })
 
-  console.log("Airtable status:", res.status)
-const rawData = await res.json()
-console.log("Airtable response:", JSON.stringify(rawData, null, 2))
-
 
   if (!res.ok) {
-    console.error("Airtable fetch failed:", res.status, await res.text())
-    return []
+  console.error("Airtable fetch failed:", res.status)
+  return []
   }
 
   const data = await res.json()
+  console.log("Airtable response:", JSON.stringify(data, null, 2))
 
   return (data.records ?? [])
-    .filter((r: any) => !!r.fields["iCal URL"]) // skip instructors with no iCal URL set
+    .filter((r: any) => !!r.fields["iCal URL"])
     .map((r: any) => ({
       id: r.id,
       name: `${r.fields["First Name"] ?? ""} ${r.fields["Last Name"] ?? ""}`.trim(),
