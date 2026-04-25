@@ -246,7 +246,7 @@ export default function BookingForm() {
   if (showProofScreen) {
     return (
       <div className="flex flex-col gap-10">
-        <div className="bg-white border border-slate-200 p-6 lg:p-12 rounded-[2rem] shadow-xl shadow-slate-100">
+        <div className={`bg-white border border-slate-200 rounded-[2rem] shadow-xl shadow-slate-100 ${step === 1 ? "p-0 lg:p-12 overflow-hidden" : "p-6 lg:p-12"}`}>
           <ProofOfPaymentScreen
             package={selectedPackage}
             paymentMethod={paymentMethod!}
@@ -336,142 +336,219 @@ export default function BookingForm() {
         )}
 
         {step === 1 && (
-          <div className="flex flex-col gap-10 lg:flex-row animate-in fade-in slide-in-from-bottom-4">
-            <div className="flex-1 space-y-8">
-              {/* FIX 3: Disable calendar date selection while availability is loading */}
-              <div className={`bg-white p-4 border border-slate-100 rounded-2xl shadow-inner flex justify-center transition-opacity ${isCheckingAvailability ? "opacity-60 pointer-events-none" : ""}`}>
-                <Calendar
-                  mode="single"
-                  selected={currentDate}
-                  onSelect={(date) => {
-                    setCurrentDate(date)
-                    setBusySlots([])
-                    setCurrentTime("")
-                    setAvailableOnDay(true)
-                    setNoInstructors(false)
-                    setAssignedInstructor(null)
-                  }}
-                  disabled={(date) => date < new Date() || date.getDay() === 0}
-                  className="rounded-md border-none"
-                />
+          <>
+            {/* ─────────────────────────────────────────────────────────────
+                DESKTOP layout: side-by-side, unchanged feel
+            ───────────────────────────────────────────────────────────────*/}
+            <div className="hidden lg:flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4">
+              {/* Progress bar */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Hours Scheduled</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-indigo-600">
+                    {totalHoursBooked} / {selectedPackage?.hours}h
+                  </p>
+                </div>
+                <div className="h-2 w-full rounded-full bg-slate-100 overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-indigo-600 transition-all duration-500"
+                    style={{ width: `${Math.min(100, (totalHoursBooked / (selectedPackage?.hours ?? 1)) * 100)}%` }}
+                  />
+                </div>
+                {hoursRemaining === 0 && (
+                  <p className="text-[10px] font-black uppercase tracking-wide text-emerald-600 flex items-center gap-1">
+                    <CheckCircle2 className="h-3 w-3" /> All hours scheduled — you&apos;re ready to continue!
+                  </p>
+                )}
               </div>
 
-              {/* No instructors cover this license type at all */}
-              {noInstructors && (
-                <div className="p-5 rounded-2xl bg-red-50 border border-red-100 flex items-start gap-3">
-                  <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
-                  <p className="text-[11px] text-red-700 font-bold uppercase tracking-wide leading-relaxed">
-                    No instructors are currently available for this license type. Please contact us directly.
-                  </p>
+              <div className="flex gap-10">
+                {/* Left: calendar + time slots */}
+                <div className="flex-1 space-y-6">
+                  <div className={`bg-white p-4 border border-slate-100 rounded-2xl shadow-inner flex justify-center transition-opacity ${isCheckingAvailability ? "opacity-60 pointer-events-none" : ""}`}>
+                    <Calendar
+                      mode="single"
+                      selected={currentDate}
+                      onSelect={(date) => { setCurrentDate(date); setBusySlots([]); setCurrentTime(""); setAvailableOnDay(true); setNoInstructors(false); setAssignedInstructor(null) }}
+                      disabled={(date) => date < new Date() || date.getDay() === 0}
+                      className="rounded-md border-none"
+                    />
+                  </div>
+                  {noInstructors && <div className="p-5 rounded-2xl bg-red-50 border border-red-100 flex items-start gap-3"><AlertCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" /><p className="text-[11px] text-red-700 font-bold uppercase tracking-wide leading-relaxed">No instructors are currently available for this license type. Please contact us directly.</p></div>}
+                  {!noInstructors && !availableOnDay && <div className="p-5 rounded-2xl bg-amber-50 border border-amber-100 flex items-start gap-3"><AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" /><p className="text-[11px] text-amber-700 font-bold uppercase tracking-wide leading-relaxed">No instructors are available on this day. Please select a different date.</p></div>}
+                  {!currentDate && <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 flex items-start gap-3"><AlertCircle className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" /><p className="text-[11px] text-slate-500 font-bold uppercase tracking-wide leading-relaxed">Select a date above to see available time slots.</p></div>}
+                  <div className="grid grid-cols-5 gap-3">
+                    {WORKING_HOURS.map((time, idx) => {
+                      const requestedRange = WORKING_HOURS.slice(idx, idx + nextSessionDuration)
+                      const isBlockedByGoogle = requestedRange.some((t) => busySlots.includes(t))
+                      const isBlockedByItinerary = sessions.some((s) => s.date.toDateString() === currentDate?.toDateString() && getBlockedSlotsForSelection(s.time, s.duration).some((t) => requestedRange.includes(t)))
+                      const isOutOfBounds = requestedRange.length < nextSessionDuration
+                      const isDisabled = !currentDate || isBlockedByGoogle || isBlockedByItinerary || isOutOfBounds
+                      return (
+                        <button key={time} disabled={isDisabled || isCheckingAvailability} onClick={() => setCurrentTime(time)}
+                          className={`h-14 rounded-xl border text-[11px] font-black transition-all flex flex-col items-center justify-center gap-1 ${isDisabled ? "border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed" : currentTime === time ? "border-indigo-600 bg-indigo-600 text-white shadow-lg shadow-indigo-100" : "border-slate-200 text-slate-600 bg-white hover:border-indigo-600"}`}>
+                          {isCheckingAvailability ? <Loader2 className="h-3 w-3 animate-spin" /> : isDisabled && currentDate ? <><AlertCircle className="h-3 w-3" /><span className="text-[8px]">TAKEN</span></> : time}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <Button onClick={addSession} disabled={!currentTime || hoursRemaining <= 0} className="w-full h-16 rounded-2xl bg-slate-900 text-white font-black uppercase tracking-[0.15em] hover:bg-indigo-600 transition-all shadow-xl disabled:opacity-20">
+                    <PlusCircle className="mr-2 h-5 w-5" /> Add {nextSessionDuration}h Session
+                    {hoursRemaining > 0 && <span className="ml-2 text-[10px] font-black opacity-70">({hoursRemaining}h left after)</span>}
+                  </Button>
                 </div>
-              )}
-
-              {/* Instructors exist but none work on this day */}
-              {!noInstructors && !availableOnDay && (
-                <div className="p-5 rounded-2xl bg-amber-50 border border-amber-100 flex items-start gap-3">
-                  <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
-                  <p className="text-[11px] text-amber-700 font-bold uppercase tracking-wide leading-relaxed">
-                    No instructors are available on this day. Please select a different date.
-                  </p>
+                {/* Right: itinerary */}
+                <div className="w-96 border-l border-slate-100 pl-10 space-y-6">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                    <div>
+                      <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Your Itinerary</p>
+                      {sessions.length > 0 && <p className="text-[10px] text-slate-500 font-bold mt-0.5">{new Set(sessions.map(s => s.date.toDateString())).size} day{new Set(sessions.map(s => s.date.toDateString())).size > 1 ? "s" : ""} selected</p>}
+                    </div>
+                    <div className="rounded-full bg-indigo-100 px-3 py-1 text-[10px] font-black text-indigo-600">{totalHoursBooked}/{selectedPackage?.hours}H</div>
+                  </div>
+                  <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
+                    {sessions.length === 0 && <div className="text-center py-10 rounded-2xl border-2 border-dashed border-slate-100"><p className="text-[10px] text-slate-400 uppercase font-black mb-1">No sessions yet</p><p className="text-[9px] text-slate-300 uppercase font-bold">Pick a date &amp; time, then tap Add Session</p></div>}
+                    {sessions.map((s, i) => (
+                      <div key={i} className="group flex items-center justify-between p-4 rounded-2xl border border-slate-100 bg-white hover:border-indigo-200 hover:shadow-md transition-all">
+                        <div>
+                          <p className="text-[12px] font-black text-slate-900 uppercase">{s.date.toLocaleDateString("en-ZA", { weekday: "short", day: "2-digit", month: "short" })}</p>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">{s.time} • {s.duration}hr session</p>
+                        </div>
+                        <button onClick={() => setSessions(sessions.filter((_, idx) => idx !== i))} className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              )}
-
-              {/* Prompt user to pick a date if they haven't yet */}
-              {!currentDate && (
-                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 flex items-start gap-3">
-                  <AlertCircle className="h-4 w-4 text-slate-400 mt-0.5 shrink-0" />
-                  <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wide leading-relaxed">
-                    Select a date above to see available time slots.
-                  </p>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-                {WORKING_HOURS.map((time, idx) => {
-                  const requestedRange = WORKING_HOURS.slice(idx, idx + nextSessionDuration)
-                  const isBlockedByGoogle = requestedRange.some((t) => busySlots.includes(t))
-                  const isBlockedByItinerary = sessions.some(
-                    (s) =>
-                      s.date.toDateString() === currentDate?.toDateString() &&
-                      getBlockedSlotsForSelection(s.time, s.duration).some((t) => requestedRange.includes(t))
-                  )
-                  const isOutOfBounds = requestedRange.length < nextSessionDuration
-                  // Also disable all slots if no date has been picked yet
-                  const isDisabled = !currentDate || isBlockedByGoogle || isBlockedByItinerary || isOutOfBounds
-
-                  return (
-                    <button
-                      key={time}
-                      disabled={isDisabled || isCheckingAvailability}
-                      onClick={() => setCurrentTime(time)}
-                      className={`h-14 rounded-xl border text-[11px] font-black transition-all flex flex-col items-center justify-center gap-1
-                        ${isDisabled
-                          ? "border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed"
-                          : currentTime === time
-                          ? "border-indigo-600 bg-indigo-600 text-white shadow-lg shadow-indigo-100"
-                          : "border-slate-200 text-slate-600 bg-white hover:border-indigo-600"
-                        }`}
-                    >
-                      {isCheckingAvailability ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : isDisabled && currentDate ? (
-                        <>
-                          <AlertCircle className="h-3 w-3" />
-                          <span className="text-[8px]">TAKEN</span>
-                        </>
-                      ) : (
-                        time
-                      )}
-                    </button>
-                  )
-                })}
               </div>
-              <Button
-                onClick={addSession}
-                disabled={!currentTime || hoursRemaining <= 0}
-                className="w-full h-16 rounded-2xl bg-slate-900 text-white font-black uppercase tracking-[0.15em] hover:bg-indigo-600 transition-all shadow-xl disabled:opacity-20"
-              >
-                <PlusCircle className="mr-2 h-5 w-5" /> Add {nextSessionDuration}h Session ({hoursRemaining}h left)
-              </Button>
             </div>
 
-            <div className="w-full lg:w-96 border-l border-slate-100 lg:pl-10 space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
-                <p className="text-[11px] font-black uppercase tracking-widest text-slate-400">Your Itinerary</p>
-                <div className="rounded-full bg-indigo-100 px-3 py-1 text-[10px] font-black text-indigo-600">
-                  {totalHoursBooked}/{selectedPackage?.hours}H
-                </div>
-              </div>
-              <div className="space-y-4 max-h-[500px] overflow-y-auto pr-2">
-                {sessions.length === 0 && (
-                  <div className="text-center py-10 rounded-2xl border-2 border-dashed border-slate-100">
-                    <p className="text-[10px] text-slate-400 uppercase font-black">No sessions added yet</p>
+            {/* ─────────────────────────────────────────────────────────────
+                MOBILE layout: fixed footer, no scrolling required
+                The card's own padding is overridden so we can go edge-to-edge.
+            ───────────────────────────────────────────────────────────────*/}
+            <div className="lg:hidden -mx-6 -mt-6 animate-in fade-in slide-in-from-bottom-4">
+
+              {/* Scrollable content area — only this scrolls, not the page */}
+              <div className="overflow-y-auto" style={{ maxHeight: "calc(100svh - 280px)" }}>
+                <div className="px-5 pt-5 space-y-4 pb-4">
+
+                  {/* Inline progress pill */}
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-2 rounded-full bg-slate-100 overflow-hidden">
+                      <div className="h-full rounded-full bg-indigo-600 transition-all duration-500" style={{ width: `${Math.min(100, (totalHoursBooked / (selectedPackage?.hours ?? 1)) * 100)}%` }} />
+                    </div>
+                    <span className="text-[10px] font-black text-indigo-600 shrink-0">{totalHoursBooked}/{selectedPackage?.hours}H</span>
                   </div>
-                )}
-                {sessions.map((s, i) => (
-                  <div
-                    key={i}
-                    className="group flex items-center justify-between p-4 rounded-2xl border border-slate-100 bg-white hover:border-indigo-200 hover:shadow-md transition-all"
-                  >
-                    <div>
-                      <p className="text-[12px] font-black text-slate-900 uppercase">
-                        {s.date.toLocaleDateString("en-ZA", { day: "2-digit", month: "short" })}
-                      </p>
-                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-tight">
-                        {s.time} • {s.duration}hr session
+
+                  {/* Instruction hint — only shown before first session */}
+                  {sessions.length === 0 && (
+                    <div className="rounded-2xl bg-indigo-50 border border-indigo-100 px-4 py-3">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500 mb-1.5">How this works</p>
+                      <p className="text-[11px] font-bold text-indigo-700 leading-relaxed">
+                        Pick a date → choose a start time → tap <strong>Add Session</strong>. Repeat until all {selectedPackage?.hours} hours are scheduled across as many days as you like.
                       </p>
                     </div>
-                    <button
-                      onClick={() => setSessions(sessions.filter((_, idx) => idx !== i))}
-                      className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                  )}
+
+                  {/* "Keep going" nudge after adding a session */}
+                  {sessions.length > 0 && hoursRemaining > 0 && !currentDate && (
+                    <div className="rounded-2xl bg-emerald-50 border border-emerald-100 px-4 py-3 flex items-center gap-3">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0" />
+                      <p className="text-[11px] font-bold text-emerald-700">
+                        Session added! Pick another date for your next {nextSessionDuration}h — {hoursRemaining}h left.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Calendar */}
+                  <div className={`rounded-2xl border border-slate-100 bg-white shadow-sm flex justify-center transition-opacity py-2 ${isCheckingAvailability ? "opacity-60 pointer-events-none" : ""}`}>
+                    <Calendar
+                      mode="single"
+                      selected={currentDate}
+                      onSelect={(date) => { setCurrentDate(date); setBusySlots([]); setCurrentTime(""); setAvailableOnDay(true); setNoInstructors(false); setAssignedInstructor(null) }}
+                      disabled={(date) => date < new Date() || date.getDay() === 0}
+                      className="rounded-md border-none"
+                    />
                   </div>
-                ))}
+
+                  {/* Status messages */}
+                  {noInstructors && <div className="p-4 rounded-2xl bg-red-50 border border-red-100 flex items-start gap-3"><AlertCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" /><p className="text-[11px] text-red-700 font-bold uppercase tracking-wide leading-relaxed">No instructors available for this license type. Please contact us.</p></div>}
+                  {!noInstructors && !availableOnDay && <div className="p-4 rounded-2xl bg-amber-50 border border-amber-100 flex items-start gap-3"><AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" /><p className="text-[11px] text-amber-700 font-bold uppercase tracking-wide leading-relaxed">No instructors on this day — pick a different date.</p></div>}
+
+                  {/* Time slots — only shown once a valid date is picked */}
+                  {currentDate && availableOnDay && !noInstructors && (
+                    <div className="space-y-3">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">
+                        {currentDate.toLocaleDateString("en-ZA", { weekday: "long", day: "2-digit", month: "short" })} — pick a start time
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {WORKING_HOURS.map((time, idx) => {
+                          const requestedRange = WORKING_HOURS.slice(idx, idx + nextSessionDuration)
+                          const isBlockedByGoogle = requestedRange.some((t) => busySlots.includes(t))
+                          const isBlockedByItinerary = sessions.some((s) => s.date.toDateString() === currentDate?.toDateString() && getBlockedSlotsForSelection(s.time, s.duration).some((t) => requestedRange.includes(t)))
+                          const isOutOfBounds = requestedRange.length < nextSessionDuration
+                          const isDisabled = isBlockedByGoogle || isBlockedByItinerary || isOutOfBounds
+                          return (
+                            <button key={time} disabled={isDisabled || isCheckingAvailability} onClick={() => setCurrentTime(time)}
+                              className={`h-14 rounded-xl border text-[11px] font-black transition-all flex flex-col items-center justify-center gap-1 ${isDisabled ? "border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed" : currentTime === time ? "border-indigo-600 bg-indigo-600 text-white shadow-lg shadow-indigo-100" : "border-slate-200 text-slate-700 bg-white"}`}>
+                              {isCheckingAvailability ? <Loader2 className="h-3 w-3 animate-spin" /> : isDisabled ? <><AlertCircle className="h-3 w-3" /><span className="text-[8px]">TAKEN</span></> : time}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Booked sessions list */}
+                  {sessions.length > 0 && (
+                    <div className="space-y-2 pt-2">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Your sessions</p>
+                      {sessions.map((s, i) => (
+                        <div key={i} className="flex items-center justify-between px-4 py-3 rounded-2xl border border-slate-100 bg-slate-50">
+                          <div>
+                            <p className="text-[12px] font-black text-slate-900 uppercase">{s.date.toLocaleDateString("en-ZA", { weekday: "short", day: "2-digit", month: "short" })}</p>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase">{s.time} • {s.duration}h</p>
+                          </div>
+                          <button onClick={() => setSessions(sessions.filter((_, idx) => idx !== i))} className="h-9 w-9 flex items-center justify-center rounded-xl text-slate-400 hover:bg-red-50 hover:text-red-500 transition-colors">
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Bottom breathing room so last item isn't hidden behind fixed footer */}
+                  <div className="h-4" />
+                </div>
+              </div>
+
+              {/* ── Fixed bottom action bar ── */}
+              <div className="border-t border-slate-100 bg-white px-5 py-4 space-y-3">
+                {/* Add session button — primary action when a time is selected */}
+                {currentDate && currentTime && hoursRemaining > 0 && (
+                  <Button onClick={addSession} className="w-full h-14 rounded-2xl bg-indigo-600 text-white font-black uppercase tracking-[0.12em] hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100">
+                    <PlusCircle className="mr-2 h-5 w-5" /> Add {nextSessionDuration}h — {currentDate.toLocaleDateString("en-ZA", { day: "2-digit", month: "short" })} @ {currentTime}
+                  </Button>
+                )}
+
+                {/* Continue / Back row */}
+                <div className="flex items-center gap-3">
+                  <Button variant="ghost" onClick={() => setStep(0)} className="h-14 px-5 rounded-2xl text-slate-400 hover:text-slate-900 font-black uppercase text-[10px] tracking-widest shrink-0">
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    onClick={() => setStep(2)}
+                    disabled={hoursRemaining !== 0}
+                    className="flex-1 h-14 rounded-2xl bg-slate-900 text-white font-black uppercase tracking-[0.12em] hover:bg-indigo-600 transition-all disabled:opacity-25"
+                  >
+                    {hoursRemaining === 0 ? <>Continue <ArrowRight className="ml-2 h-4 w-4" /></> : <>{hoursRemaining}h still to schedule</>}
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
+          </>
         )}
 
         {step === 2 && (
@@ -493,7 +570,7 @@ export default function BookingForm() {
           />
         )}
 
-        <div className="mt-16 flex items-center justify-between border-t border-slate-100 pt-10">
+        <div className={`mt-16 flex items-center justify-between border-t border-slate-100 pt-10 ${step === 1 ? "hidden lg:flex" : ""}`}>
           <Button
             variant="ghost"
             onClick={() => setStep(step - 1)}

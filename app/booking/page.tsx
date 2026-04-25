@@ -23,41 +23,6 @@ export default function BookingPage() {
       <main className="flex-1">
         
         {/* Header Section: Minimal & Prestigious */}
-        <section className="relative overflow-hidden bg-slate-50 border-b border-slate-200 py-24">
-          {/* Subtle Grid Pattern Overlay */}
-          <div className="absolute inset-0 opacity-[0.03] [background-image:linear-gradient(to_right,#4f46e5_1px,transparent_1px),linear-gradient(to_bottom,#4f46e5_1px,transparent_1px)] [background-size:40px_40px]" />
-          
-          <div className="relative mx-auto max-w-7xl px-6">
-            <div className="mx-auto max-w-3xl text-center">
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-indigo-100 px-4 py-1.5">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-75"></span>
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-indigo-600"></span>
-                </span>
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-700">Live Availability</span>
-              </div>
-              
-              <h1 className="mb-6 text-5xl font-[950] uppercase tracking-tighter text-slate-900 md:text-6xl">
-                Secure Your <span className="text-indigo-600">Training</span> Slot
-              </h1>
-              
-              <p className="mb-12 text-sm font-bold uppercase tracking-[0.15em] text-slate-500 max-w-xl mx-auto leading-relaxed">
-                Professional K53 instruction tailored to your schedule. Choose your package and build your itinerary below.
-              </p>
-              
-              <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-6">
-                {highlights.map((h) => (
-                  <div key={h.text} className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow-sm border border-slate-100">
-                       <h.icon className="h-5 w-5 text-indigo-600" />
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">{h.text}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
 
         {/* Form Section: Spaced & Focused */}
         <section className="py-20 md:py-32 bg-white">
