@@ -40,9 +40,12 @@ function Calendar({
       // Combine Weekend and Past Date logic with any passed disabled props
       disabled={[isWeekend, isPast, ...(Array.isArray(disabled) ? disabled : disabled ? [disabled] : [])]}
       className={cn(
-        // Academy Styling: Clean white, soft shadow, rounded geometry
-        'bg-white group/calendar p-6 rounded-[2rem] border border-slate-100 shadow-sm select-none',
+        // Functional base — always applied
+        'bg-white group/calendar select-none w-full',
         '[--cell-size:44px] [--rdp-accent-color:theme(colors.indigo.600)] [--rdp-background-alpha:0]',
+        // Default chrome (padding, border, rounding, shadow) — listed BEFORE className
+        // so callers can override them (e.g. "p-0 border-none shadow-none rounded-none" on mobile)
+        'p-6 rounded-[2rem] border border-slate-100 shadow-sm',
         className,
       )}
       captionLayout={captionLayout}
