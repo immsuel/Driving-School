@@ -112,7 +112,7 @@ async function fetchBusySlotsForInstructor(
   instructorName: string
 ): Promise<string[]> {
   const formula = encodeURIComponent(
-    `AND({Date}="${dateStr}",{Instructor Name}="${instructorName}",{Confirmed}=TRUE())`
+    `AND({Date}="${dateStr}",{Instructor Name}="${instructorName}")`
   )
 
   const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${SESSIONS_TABLE}?filterByFormula=${formula}&fields%5B%5D=Time&fields%5B%5D=Duration`
