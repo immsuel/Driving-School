@@ -25,8 +25,8 @@ export default function BookingPage() {
         {/* Header Section: Minimal & Prestigious */}
 
         {/* Form Section: Spaced & Focused */}
-        <section className="py-20 md:py-32 bg-white">
-          <div className="mx-auto max-w-5xl px-6">
+        <section className="">
+          <div className="">
             <BookingForm />
           </div>
         </section>
