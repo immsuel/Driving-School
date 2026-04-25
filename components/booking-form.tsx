@@ -201,7 +201,7 @@ export default function BookingForm() {
       instructorLastName: assignedInstructor?.lastName ?? null,
       instructorPhone: assignedInstructor?.phone ?? null,
       sessions: sessions.map((s) => ({
-        date: s.date.toISOString().split("T")[0],
+        date: `${s.date.getFullYear()}-${String(s.date.getMonth() + 1).padStart(2, "0")}-${String(s.date.getDate()).padStart(2, "0")}`,
         time: s.time,
         duration: `${s.duration}h`,
         phone: normalisedPhone,
