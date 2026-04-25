@@ -461,16 +461,14 @@ export default function BookingForm() {
                     </div>
                   )}
 
-                  {/* Calendar */}
-                  <div className={`rounded-2xl border border-slate-100 bg-white shadow-sm flex justify-center transition-opacity py-2 ${isCheckingAvailability ? "opacity-60 pointer-events-none" : ""}`}>
-                    <Calendar
-                      mode="single"
-                      selected={currentDate}
-                      onSelect={(date) => { setCurrentDate(date); setBusySlots([]); setCurrentTime(""); setAvailableOnDay(true); setNoInstructors(false); setAssignedInstructor(null) }}
-                      disabled={(date) => date < new Date() || date.getDay() === 0}
-                      className="rounded-md border-none"
-                    />
-                  </div>
+                  {/* Calendar — chrome stripped so it doesn't double-up inside the card */}
+                  <Calendar
+                    mode="single"
+                    selected={currentDate}
+                    onSelect={(date) => { setCurrentDate(date); setBusySlots([]); setCurrentTime(""); setAvailableOnDay(true); setNoInstructors(false); setAssignedInstructor(null) }}
+                    disabled={(date) => date < new Date() || date.getDay() === 0}
+                    className={`p-0 rounded-none border-none shadow-none transition-opacity ${isCheckingAvailability ? "opacity-60 pointer-events-none" : ""}`}
+                  />
 
                   {/* Status messages */}
                   {noInstructors && <div className="p-4 rounded-2xl bg-red-50 border border-red-100 flex items-start gap-3"><AlertCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" /><p className="text-[11px] text-red-700 font-bold uppercase tracking-wide leading-relaxed">No instructors available for this license type. Please contact us.</p></div>}
