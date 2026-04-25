@@ -115,10 +115,11 @@ async function fetchBusySlotsForInstructor(
 ): Promise<string[]> {
   // Filter: date matches AND instructor matches AND session is confirmed.
   // Keep formula on one line — Airtable's API rejects newlines in encoded formulas (422).
-  const formula = encodeURIComponent(`AND({Date}="${dateStr}",{Instructor Name}="${instructorName}",{Confirmed}="checked")`)
+  const formula = encodeURIComponent(`AND({Date}="${dateStr}",{Instructor Name}="${instructorName}",{Confirmed}=TRUE())`)
 
   // Each fields[] param must be encoded separately — encoding the whole string at once breaks the [] syntax.
   const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${SESSIONS_TABLE}?filterByFormula=${formula}&fields%5B%5D=Time&fields%5B%5D=Duration`
+  console.log("📡 Sessions query URL:", url)
 
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` },
