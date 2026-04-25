@@ -113,16 +113,12 @@ async function fetchBusySlotsForInstructor(
   dateStr: string,        // "YYYY-MM-DD"
   instructorName: string  // must match the "Instructor Name" field in Sessions
 ): Promise<string[]> {
-  // Filter: date matches AND instructor matches AND session is confirmed
-  const formula = encodeURIComponent(
-    `AND(
-      {Date} = "${dateStr}",
-      {Instructor Name} = "${instructorName}",
-      {Confirmed} = "checked"
-    )`
-  )
-  const fields = encodeURIComponent("fields[]=Time&fields[]=Duration")
-  const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${SESSIONS_TABLE}?filterByFormula=${formula}&${fields}`
+  // Filter: date matches AND instructor matches AND session is confirmed.
+  // Keep formula on one line — Airtable's API rejects newlines in encoded formulas (422).
+  const formula = encodeURIComponent(`AND({Date}="${dateStr}",{Instructor Name}="${instructorName}",{Confirmed}="checked")`)
+
+  // Each fields[] param must be encoded separately — encoding the whole string at once breaks the [] syntax.
+  const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${SESSIONS_TABLE}?filterByFormula=${formula}&fields%5B%5D=Time&fields%5B%5D=Duration`
 
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` },
@@ -130,7 +126,8 @@ async function fetchBusySlotsForInstructor(
   })
 
   if (!res.ok) {
-    console.error(`Airtable Sessions fetch failed for ${instructorName} on ${dateStr}:`, res.status)
+    const errBody = await res.text().catch(() => "(unreadable)")
+    console.error(`Airtable Sessions fetch failed for ${instructorName} on ${dateStr}: HTTP ${res.status}`, errBody)
     return []
   }
 
