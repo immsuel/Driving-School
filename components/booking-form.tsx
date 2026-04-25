@@ -425,13 +425,12 @@ export default function BookingForm() {
             </div>
 
             {/* ─────────────────────────────────────────────────────────────
-                MOBILE layout: fixed footer, no scrolling required
-                The card's own padding is overridden so we can go edge-to-edge.
+                MOBILE layout: natural page scroll + sticky bottom action bar
             ───────────────────────────────────────────────────────────────*/}
             <div className="lg:hidden -mx-6 -mt-6 animate-in fade-in slide-in-from-bottom-4">
 
-              {/* Scrollable content area — only this scrolls, not the page */}
-              <div className="overflow-y-auto" style={{ maxHeight: "calc(100svh - 280px)" }}>
+              {/* Content scrolls naturally with the page — no clipping */}
+              <div>
                 <div className="px-5 pt-5 space-y-4 pb-4">
 
                   {/* Inline progress pill */}
@@ -524,8 +523,8 @@ export default function BookingForm() {
                 </div>
               </div>
 
-              {/* ── Fixed bottom action bar ── */}
-              <div className="border-t border-slate-100 bg-white px-5 py-4 space-y-3">
+              {/* ── Sticky bottom action bar — sticks to bottom of viewport as user scrolls ── */}
+              <div className="sticky bottom-0 border-t border-slate-100 bg-white px-5 py-4 space-y-3">
                 {/* Add session button — primary action when a time is selected */}
                 {currentDate && currentTime && hoursRemaining > 0 && (
                   <Button onClick={addSession} className="w-full h-14 rounded-2xl bg-indigo-600 text-white font-black uppercase tracking-[0.12em] hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100">
