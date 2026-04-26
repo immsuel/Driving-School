@@ -435,33 +435,33 @@ export default function BookingForm() {
     <div className="flex flex-col gap-10">
       {showPolicyModal && <PolicyModal onClose={() => setShowPolicyModal(false)} />}
 
-      <div className={`bg-white border border-slate-200 rounded-[2rem] shadow-xl shadow-slate-100 ${step === 1 ? "p-0 lg:p-12 overflow-hidden" : "p-6 lg:p-12"}`}>
+      <div className={`bg-white border border-slate-200 rounded-[2rem] shadow-xl shadow-slate-100 ${step === 1 ? "p-0 lg:p-12 overflow-hidden" : "p-5 lg:p-12"}`}>
 
         {/* ─── STEP 0: Package Selection ─────────────────────────────────── */}
         {step === 0 && (
-          <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4">
+          <div className="space-y-6 lg:space-y-10 animate-in fade-in slide-in-from-bottom-4">
             {!filter ? (
-              <div className="space-y-6">
+              <div className="space-y-4 lg:space-y-6">
                 <div className="space-y-1">
                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Step 1 of 4</p>
                   <h2 className="text-2xl font-black uppercase tracking-tight text-slate-900">Choose License Type</h2>
                 </div>
-                <div className="grid gap-6 sm:grid-cols-3">
+                <div className="grid gap-3 lg:gap-6 sm:grid-cols-3">
                   {[
                     { id: "8M", label: "Code 8 Manual", from: "From R1,550" },
                     { id: "8A", label: "Code 8 Auto",   from: "From R1,600" },
                     { id: "10", label: "Code 10 Truck", from: "From R1,950" },
                   ].map((cat) => (
                     <button key={cat.id} onClick={() => setFilter(cat.id)}
-                      className="p-10 rounded-2xl border border-slate-100 bg-slate-50 text-center hover:border-indigo-600 hover:bg-white hover:shadow-lg transition-all group">
+                      className="p-5 lg:p-10 rounded-2xl border border-slate-100 bg-slate-50 text-center hover:border-indigo-600 hover:bg-white hover:shadow-lg transition-all group active:scale-[0.98]">
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 group-hover:text-indigo-600">License Type</p>
-                      <p className="text-xl font-black uppercase text-slate-900 mt-1">{cat.label}</p>
-                      <p className="text-[11px] font-bold text-indigo-500 mt-2 uppercase tracking-wide">{cat.from}</p>
+                      <p className="text-lg lg:text-xl font-black uppercase text-slate-900 mt-1">{cat.label}</p>
+                      <p className="text-[11px] font-bold text-indigo-500 mt-1 lg:mt-2 uppercase tracking-wide">{cat.from}</p>
                     </button>
                   ))}
                 </div>
                 <button onClick={() => { setFilter("Spec"); setSelectedPackage(packages.find(p => p.id === "test-prep") ?? null) }}
-                  className="w-full p-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 flex items-center justify-between hover:border-indigo-400 hover:bg-white transition-all group">
+                  className="w-full p-4 lg:p-6 rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 flex items-center justify-between hover:border-indigo-400 hover:bg-white transition-all group active:scale-[0.99]">
                   <div className="text-left">
                     <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Standalone</p>
                     <p className="text-sm font-black uppercase text-slate-900">Test Day Prep — Vehicle + 2hr Mock Test</p>
@@ -470,7 +470,7 @@ export default function BookingForm() {
                 </button>
               </div>
             ) : (
-              <div className="space-y-8">
+              <div className="space-y-5 lg:space-y-8">
                 <button onClick={() => { setFilter(null); setSelectedPackage(null) }}
                   className="group flex items-center gap-2 text-[10px] font-black text-indigo-600 uppercase transition-all hover:translate-x-[-4px]">
                   <ArrowLeft className="h-3 w-3" /> Change License Type
@@ -486,11 +486,11 @@ export default function BookingForm() {
                     </thead>
                     <tbody>
                       {packages.filter(p => p.code === filter).map(pkg => (
-                        <tr key={pkg.id} className={`border-b border-slate-50 cursor-pointer transition-colors hover:bg-indigo-50 ${selectedPackage?.id === pkg.id ? "bg-indigo-50" : ""}`}
+                        <tr key={pkg.id} className={`border-b border-slate-50 cursor-pointer transition-colors hover:bg-indigo-50 active:bg-indigo-100 ${selectedPackage?.id === pkg.id ? "bg-indigo-50" : ""}`}
                           onClick={() => { setSelectedPackage(pkg); setSessions([]) }}>
-                          <td className="py-3 pr-6 font-black text-slate-900">{pkg.hours}h</td>
-                          <td className="py-3 pr-4 text-right font-black text-indigo-600">{pkg.price}</td>
-                          <td className="py-3 text-right text-slate-400 font-bold">R{Math.round(pkg.priceNum / pkg.hours)}/hr</td>
+                          <td className="py-4 pr-6 font-black text-slate-900">{pkg.hours}h</td>
+                          <td className="py-4 pr-4 text-right font-black text-indigo-600">{pkg.price}</td>
+                          <td className="py-4 text-right text-slate-400 font-bold">R{Math.round(pkg.priceNum / pkg.hours)}/hr</td>
                         </tr>
                       ))}
                     </tbody>
@@ -509,7 +509,7 @@ export default function BookingForm() {
             )}
 
             {selectedPackage && selectedPackage.hours > 1 && (
-              <div className="p-8 rounded-2xl bg-indigo-50/50 border border-indigo-100 space-y-4">
+              <div className="p-5 lg:p-8 rounded-2xl bg-indigo-50/50 border border-indigo-100 space-y-3 lg:space-y-4">
                 <Label className="text-[11px] font-black uppercase tracking-widest text-slate-600">Session Intensity</Label>
                 <Select value={hoursPerDay} onValueChange={(v) => { setHoursPerDay(v); setSessions([]) }}>
                   <SelectTrigger className="h-14 rounded-xl border-slate-200 bg-white text-slate-900 focus:ring-indigo-600">
@@ -634,12 +634,12 @@ export default function BookingForm() {
 
             {/* MOBILE */}
             <div className="lg:hidden -mx-6 -mt-6 animate-in fade-in slide-in-from-bottom-4">
-              <div className="px-5 pt-5 pb-3">
+              <div className="px-4 pt-4 pb-2">
                 <ProgressBar total={selectedPackage?.hours ?? 0} booked={totalHoursBooked} />
                 {sessions.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-3">
+                  <div className="flex flex-wrap gap-1.5 mt-3">
                     {sessions.map((s, i) => (
-                      <div key={i} className="flex items-center gap-1.5 rounded-full bg-indigo-50 border border-indigo-100 pl-3 pr-1.5 py-1">
+                      <div key={i} className="flex items-center gap-1 rounded-full bg-indigo-50 border border-indigo-100 pl-2.5 pr-1 py-1">
                         <span className="text-[10px] font-black text-indigo-700 uppercase">
                           {s.date.toLocaleDateString("en-ZA", { weekday: "short", day: "2-digit", month: "short" })} · {s.time}
                         </span>
@@ -655,9 +655,9 @@ export default function BookingForm() {
 
               {/* SCREEN A — Calendar */}
               {!currentDate && (
-                <div className="px-5 space-y-4 pb-4">
+                <div className="px-4 space-y-3 pb-4">
                   <div>
-                    <p className="text-xl font-[950] uppercase tracking-tighter text-slate-900 leading-tight">
+                    <p className="text-lg font-[950] uppercase tracking-tighter text-slate-900 leading-tight">
                       {sessions.length === 0 ? `Choose a date for lesson 1` : hoursRemaining > 0 ? `Choose a date for lesson ${sessions.length + 1}` : `All ${selectedPackage?.hours} hours scheduled`}
                     </p>
                     {hoursRemaining > 0 && <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide mt-1">{hoursRemaining}h remaining · tap any available date</p>}
@@ -673,7 +673,7 @@ export default function BookingForm() {
                       selected={undefined}
                       onSelect={handleDateSelect}
                       disabled={(date) => date < new Date() || date.getDay() === 0}
-                      className="p-0 rounded-none border-none shadow-none bg-transparent"
+                      className="p-0 rounded-none border-none shadow-none bg-transparent [--cell-size:40px]"
                     />
                   )}
                 </div>
@@ -681,10 +681,10 @@ export default function BookingForm() {
 
               {/* SCREEN B — Time picker */}
               {currentDate && (
-                <div className="px-5 space-y-5 pb-4 animate-in fade-in slide-in-from-right-4 duration-200">
+                <div className="px-4 space-y-4 pb-4 animate-in fade-in slide-in-from-right-4 duration-200">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="text-xl font-[950] uppercase tracking-tighter text-slate-900 leading-tight">
+                      <p className="text-lg font-[950] uppercase tracking-tighter text-slate-900 leading-tight">
                         {currentDate.toLocaleDateString("en-ZA", { weekday: "long", day: "2-digit", month: "long" })}
                       </p>
                       <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide mt-1">Choose a start time for lesson {sessions.length + 1}</p>
@@ -714,7 +714,7 @@ export default function BookingForm() {
                   )}
 
                   {!isCheckingAvailability && availableOnDay && !noInstructors && (
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       {WORKING_HOURS.map((time, idx) => {
                         const range             = WORKING_HOURS.slice(idx, idx + nextSessionDuration)
                         const blockedByAirtable = range.some((t) => busySlots.includes(t))
@@ -726,7 +726,7 @@ export default function BookingForm() {
                         const isDisabled  = blockedByAirtable || blockedByItinerary || outOfBounds
                         return (
                           <button key={time} disabled={isDisabled} onClick={() => setCurrentTime(time)}
-                            className={`h-14 rounded-xl border text-[11px] font-black transition-all flex flex-col items-center justify-center gap-1 ${isDisabled ? "border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed" : currentTime === time ? "border-indigo-600 bg-indigo-600 text-white shadow-lg shadow-indigo-100" : "border-slate-200 text-slate-700 bg-white active:scale-95"}`}>
+                            className={`h-12 rounded-xl border text-[11px] font-black transition-all flex flex-col items-center justify-center gap-0.5 active:scale-95 ${isDisabled ? "border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed" : currentTime === time ? "border-indigo-600 bg-indigo-600 text-white shadow-lg shadow-indigo-100" : "border-slate-200 text-slate-700 bg-white"}`}>
                             {isDisabled ? <><AlertCircle className="h-3 w-3" /><span className="text-[8px]">TAKEN</span></> : time}
                           </button>
                         )
@@ -792,7 +792,7 @@ export default function BookingForm() {
         )}
 
         {/* ─── Nav bar ───────────────────────────────────────────────────── */}
-        <div className={`mt-16 flex items-center justify-between border-t border-slate-100 pt-10 ${step === 1 ? "hidden lg:flex" : ""}`}>
+        <div className={`mt-8 lg:mt-16 flex items-center justify-between border-t border-slate-100 pt-6 lg:pt-10 ${step === 1 ? "hidden lg:flex" : ""}`}>
           <Button variant="ghost" onClick={() => setStep(step - 1)} disabled={step === 0 || isSubmitting}
             className="text-slate-400 hover:text-slate-900 uppercase text-[10px] font-black tracking-widest">
             <ArrowLeft className="mr-2 h-4 w-4" /> Back
@@ -1004,17 +1004,17 @@ function PaymentMethodStep({ selectedMethod, onSelect, package: pkg, onViewPolic
   selectedMethod: string | null; onSelect: (id: string) => void; package: any; onViewPolicy: () => void
 }) {
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4">
+    <div className="space-y-6 lg:space-y-10 animate-in fade-in slide-in-from-bottom-4">
       <div>
         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Step 4 of 4</p>
         <h3 className="text-2xl font-black uppercase tracking-tight text-slate-900">Payment Method</h3>
         <p className="text-sm text-slate-400 mt-2 font-medium">How would you like to settle {pkg?.price}?</p>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid grid-cols-2 gap-3 lg:gap-4">
         {PAYMENT_METHODS.map(({ id, label, icon: Icon, description }) => (
           <button key={id} onClick={() => onSelect(id)}
-            className={`p-8 rounded-2xl border text-left transition-all group ${selectedMethod === id ? "border-indigo-600 bg-indigo-50 shadow-md ring-1 ring-indigo-600" : "border-slate-100 bg-slate-50 hover:border-indigo-300 hover:bg-white hover:shadow-md"}`}>
-            <div className={`h-12 w-12 rounded-xl flex items-center justify-center mb-4 transition-colors ${selectedMethod === id ? "bg-indigo-600 text-white" : "bg-white text-slate-400 group-hover:text-indigo-600 border border-slate-100"}`}>
+            className={`p-5 lg:p-8 rounded-2xl border text-left transition-all group active:scale-[0.97] ${selectedMethod === id ? "border-indigo-600 bg-indigo-50 shadow-md ring-1 ring-indigo-600" : "border-slate-100 bg-slate-50 hover:border-indigo-300 hover:bg-white hover:shadow-md"}`}>
+            <div className={`h-10 w-10 lg:h-12 lg:w-12 rounded-xl flex items-center justify-center mb-3 lg:mb-4 transition-colors ${selectedMethod === id ? "bg-indigo-600 text-white" : "bg-white text-slate-400 group-hover:text-indigo-600 border border-slate-100"}`}>
               <Icon className="h-5 w-5" />
             </div>
             <p className={`text-sm font-black uppercase tracking-widest ${selectedMethod === id ? "text-indigo-600" : "text-slate-900"}`}>{label}</p>
@@ -1023,7 +1023,7 @@ function PaymentMethodStep({ selectedMethod, onSelect, package: pkg, onViewPolic
         ))}
       </div>
       {selectedMethod && selectedMethod !== "cash" && (
-        <div className="p-5 rounded-2xl bg-amber-50 border border-amber-100 flex items-start gap-3">
+        <div className="p-4 lg:p-5 rounded-2xl bg-amber-50 border border-amber-100 flex items-start gap-3">
           <AlertCircle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
           <p className="text-[11px] text-amber-700 font-bold uppercase tracking-wide leading-relaxed">
             You&apos;ll be shown payment details on the next screen. Your booking is only confirmed once proof of payment is received.
@@ -1031,7 +1031,7 @@ function PaymentMethodStep({ selectedMethod, onSelect, package: pkg, onViewPolic
         </div>
       )}
       {selectedMethod === "cash" && (
-        <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-start gap-3">
+        <div className="p-4 lg:p-5 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-start gap-3">
           <CheckCircle2 className="h-4 w-4 text-emerald-500 mt-0.5 shrink-0" />
           <p className="text-[11px] text-emerald-700 font-bold uppercase tracking-wide leading-relaxed">Cash payment is due on your first session. Your booking will be confirmed immediately.</p>
         </div>
@@ -1047,30 +1047,30 @@ function PersonalDetailsForm({ formData, setFormData, phoneError, onPhoneBlur }:
   formData: FormData; setFormData: (d: FormData) => void; phoneError: string; onPhoneBlur: () => void
 }) {
   return (
-    <div className="grid gap-8 animate-in fade-in slide-in-from-bottom-4">
+    <div className="grid gap-5 lg:gap-8 animate-in fade-in slide-in-from-bottom-4">
       <div>
         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Step 3 of 4</p>
         <h3 className="text-2xl font-black uppercase tracking-tight text-slate-900">Your Details</h3>
       </div>
-      <div className="grid gap-8 sm:grid-cols-2">
-        <div className="space-y-3">
+      <div className="grid gap-5 lg:gap-8 sm:grid-cols-2">
+        <div className="space-y-2 lg:space-y-3">
           <Label className="text-[11px] font-black uppercase text-slate-400 tracking-widest ml-1">First Name</Label>
           <Input className="h-14 rounded-xl border-slate-200 bg-slate-50/50 text-slate-900 focus:bg-white focus:ring-indigo-600" placeholder="John"
             value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} />
         </div>
-        <div className="space-y-3">
+        <div className="space-y-2 lg:space-y-3">
           <Label className="text-[11px] font-black uppercase text-slate-400 tracking-widest ml-1">Last Name</Label>
           <Input className="h-14 rounded-xl border-slate-200 bg-slate-50/50 text-slate-900 focus:bg-white focus:ring-indigo-600" placeholder="Doe"
             value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} />
         </div>
       </div>
-      <div className="grid gap-8 sm:grid-cols-2">
-        <div className="space-y-3">
+      <div className="grid gap-5 lg:gap-8 sm:grid-cols-2">
+        <div className="space-y-2 lg:space-y-3">
           <Label className="text-[11px] font-black uppercase text-slate-400 tracking-widest ml-1">Email Address</Label>
           <Input type="email" className="h-14 rounded-xl border-slate-200 bg-slate-50/50 text-slate-900 focus:bg-white focus:ring-indigo-600" placeholder="email@example.com"
             value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
         </div>
-        <div className="space-y-3">
+        <div className="space-y-2 lg:space-y-3">
           <Label className="text-[11px] font-black uppercase text-slate-400 tracking-widest ml-1">Cell Number</Label>
           <Input className={`h-14 rounded-xl bg-slate-50/50 text-slate-900 focus:bg-white focus:ring-indigo-600 ${phoneError ? "border-red-400 focus:ring-red-400" : "border-slate-200"}`}
             placeholder="081 000 0000" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} onBlur={onPhoneBlur} />
@@ -1081,7 +1081,7 @@ function PersonalDetailsForm({ formData, setFormData, phoneError, onPhoneBlur }:
           )}
         </div>
       </div>
-      <div className="space-y-3">
+      <div className="space-y-2 lg:space-y-3">
         <Label className="text-[11px] font-black uppercase text-slate-400 tracking-widest ml-1">Pickup Address</Label>
         <Input className="h-14 rounded-xl border-slate-200 bg-slate-50/50 text-slate-900 focus:bg-white focus:ring-indigo-600" placeholder="123 Street Name, Suburb, City"
           value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} />
