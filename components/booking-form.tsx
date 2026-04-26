@@ -14,13 +14,9 @@ import {
 
 import { getAvailableSlots, getBatchAvailability } from "@/app/actions/instructors"
 import type { AssignedInstructor, DayAvailability } from "@/app/actions/instructors"
+import { WORKING_HOURS } from "@/app/actions/booking-constants"
 
 const BOOKING_API = "/api/booking"
-
-const WORKING_HOURS = [
-  "08:00","09:00","10:00","11:00","12:00",
-  "13:00","14:00","15:00","16:00","17:00",
-]
 
 const packages = [
   { id: "c8m-5",    label: "Code 8 Manual: 5 Hours",  code: "8M",   hours: 5,  price: "R1,550",  priceNum: 1550 },

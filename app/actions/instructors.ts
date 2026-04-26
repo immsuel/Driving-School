@@ -9,15 +9,12 @@
 //                 Duration: text "1h"/"2h"/…, Instructor Name: text)
 // ---------------------------------------------------------------------------
 
+import { WORKING_HOURS } from "@/app/actions/booking-constants"
+
 const AIRTABLE_BASE_ID  = process.env.AIRTABLE_BASE_ID!
 const AIRTABLE_API_KEY  = process.env.AIRTABLE_API_KEY!
 const INSTRUCTORS_TABLE = process.env.AIRTABLE_INSTRUCTORS_TABLE_ID!
 const SESSIONS_TABLE    = process.env.AIRTABLE_SESSIONS_TABLE_ID!
-
-export const WORKING_HOURS = [
-  "08:00","09:00","10:00","11:00","12:00",
-  "13:00","14:00","15:00","16:00","17:00",
-]
 
 const LICENSE_TYPE_MAP: Record<string, string> = {
   "8M":   "Code 8 Manual",
