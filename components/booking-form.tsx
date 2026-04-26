@@ -435,7 +435,7 @@ export default function BookingForm() {
     <div className="flex flex-col gap-10">
       {showPolicyModal && <PolicyModal onClose={() => setShowPolicyModal(false)} />}
 
-      <div className={`bg-white border border-slate-200 rounded-[2rem] shadow-xl shadow-slate-100 ${step === 1 ? "p-0 lg:p-12 overflow-hidden" : "p-5 lg:p-12"}`}>
+      <div className={`bg-white border border-slate-200 rounded-[2rem] shadow-xl shadow-slate-100 ${step === 1 ? "p-5 lg:p-0 lg:overflow-hidden" : "p-5 lg:p-12"}`}>
 
         {/* ─── STEP 0: Package Selection ─────────────────────────────────── */}
         {step === 0 && (
@@ -538,7 +538,7 @@ export default function BookingForm() {
         {step === 1 && (
           <>
             {/* DESKTOP */}
-            <div className="hidden lg:flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4">
+            <div className="hidden lg:flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 p-12">
               <ProgressBar total={selectedPackage?.hours ?? 0} booked={totalHoursBooked} />
 
               <div className="flex gap-10">
@@ -633,8 +633,8 @@ export default function BookingForm() {
             </div>
 
             {/* MOBILE */}
-            <div className="lg:hidden -mx-6 -mt-6 animate-in fade-in slide-in-from-bottom-4">
-              <div className="px-4 pt-4 pb-2">
+            <div className="lg:hidden animate-in fade-in slide-in-from-bottom-4">
+              <div className="pb-2">
                 <ProgressBar total={selectedPackage?.hours ?? 0} booked={totalHoursBooked} />
                 {sessions.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-3">
@@ -655,7 +655,7 @@ export default function BookingForm() {
 
               {/* SCREEN A — Calendar */}
               {!currentDate && (
-                <div className="px-4 space-y-3 pb-4">
+                <div className="space-y-3 pb-4">
                   <div>
                     <p className="text-lg font-[950] uppercase tracking-tighter text-slate-900 leading-tight">
                       {sessions.length === 0 ? `Choose a date for lesson 1` : hoursRemaining > 0 ? `Choose a date for lesson ${sessions.length + 1}` : `All ${selectedPackage?.hours} hours scheduled`}
@@ -681,7 +681,7 @@ export default function BookingForm() {
 
               {/* SCREEN B — Time picker */}
               {currentDate && (
-                <div className="px-4 space-y-4 pb-4 animate-in fade-in slide-in-from-right-4 duration-200">
+                <div className="space-y-4 pb-4 animate-in fade-in slide-in-from-right-4 duration-200">
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-lg font-[950] uppercase tracking-tighter text-slate-900 leading-tight">
@@ -751,7 +751,7 @@ export default function BookingForm() {
               )}
 
               {/* Sticky bottom action bar (mobile) */}
-              <div className="sticky bottom-0 border-t border-slate-100 bg-white px-5 py-4 space-y-3">
+              <div className="sticky bottom-0 -mx-5 -mb-5 border-t border-slate-100 bg-white px-5 py-4 space-y-3 rounded-b-[2rem]">
                 {currentDate && currentTime && hoursRemaining > 0 && !autoFillPreview && (
                   <Button onClick={() => addSession()}
                     className="w-full h-14 rounded-2xl bg-indigo-600 text-white font-black uppercase tracking-[0.12em] hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 active:scale-[0.98]">
