@@ -1,23 +1,12 @@
 "use server"
 
 // ---------------------------------------------------------------------------
-// getAvailableSlots
+// Instructor availability server actions
 //
-// Determines instructor availability by querying two Airtable tables:
-//
-//   1. Instructors — finds active instructors covering the requested license
-//      type who work on the requested day of the week.
-//
-//   2. Sessions — finds which time slots are already booked for each matching
-//      instructor on the requested date.
-//
-// Field types in Sessions:
-//   - Date            → single line text  ("YYYY-MM-DD")
-//   - Time            → single line text  ("HH:MM")
-//   - Duration        → single line text  ("1h", "2h", etc.)
-//   - Instructor Name → single line text
-//   - Confirmed       → checkbox          (boolean, TRUE/FALSE)
-//   - Phone           → phone number field
+// Tables:
+//   Instructors — active instructors with license types and working days
+//   Sessions    — booked sessions (Date: text "YYYY-MM-DD", Time: text "HH:MM",
+//                 Duration: text "1h"/"2h"/…, Instructor Name: text)
 // ---------------------------------------------------------------------------
 
 const AIRTABLE_BASE_ID  = process.env.AIRTABLE_BASE_ID!
@@ -25,7 +14,7 @@ const AIRTABLE_API_KEY  = process.env.AIRTABLE_API_KEY!
 const INSTRUCTORS_TABLE = process.env.AIRTABLE_INSTRUCTORS_TABLE_ID!
 const SESSIONS_TABLE    = process.env.AIRTABLE_SESSIONS_TABLE_ID!
 
-const WORKING_HOURS = [
+export const WORKING_HOURS = [
   "08:00","09:00","10:00","11:00","12:00",
   "13:00","14:00","15:00","16:00","17:00",
 ]
@@ -44,25 +33,33 @@ const DAY_LABELS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
 // ---------------------------------------------------------------------------
 
 interface Instructor {
-  id: string
-  name: string
-  firstName: string
-  lastName: string
-  phone: string
-  email: string
+  id:           string
+  name:         string
+  firstName:    string
+  lastName:     string
+  phone:        string
+  email:        string
   licenseTypes: string[]
-  workingDays: string[]
+  workingDays:  string[]
 }
 
 export interface AssignedInstructor {
   firstName: string
-  lastName: string
-  phone: string
-  email: string
+  lastName:  string
+  phone:     string
+  email:     string
+}
+
+export interface DayAvailability {
+  date:               string          // "YYYY-MM-DD"
+  busySlots:          string[]        // slots fully blocked across all instructors
+  hasInstructors:     boolean
+  availableOnDay:     boolean
+  assignedInstructor: AssignedInstructor | null
 }
 
 // ---------------------------------------------------------------------------
-// Fetch active instructors for a license type
+// Internal helpers
 // ---------------------------------------------------------------------------
 
 async function fetchInstructors(licenseType: string): Promise<Instructor[]> {
@@ -75,15 +72,9 @@ async function fetchInstructors(licenseType: string): Promise<Instructor[]> {
     headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` },
     cache: "no-store",
   })
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => "")
-    console.error(`Instructors fetch failed: HTTP ${res.status}`, body)
-    return []
-  }
+  if (!res.ok) return []
 
   const data = await res.json()
-
   return (data.records ?? []).map((r: any) => {
     const firstName = r.fields["First Name"] ?? ""
     const lastName  = r.fields["Last Name"]  ?? ""
@@ -100,13 +91,6 @@ async function fetchInstructors(licenseType: string): Promise<Instructor[]> {
   })
 }
 
-// ---------------------------------------------------------------------------
-// Fetch busy slots for one instructor on one date
-//
-// Date and Instructor Name are plain text → string equality.
-// Confirmed is a checkbox → TRUE() not "checked".
-// ---------------------------------------------------------------------------
-
 async function fetchBusySlotsForInstructor(
   dateStr: string,
   instructorName: string
@@ -114,24 +98,16 @@ async function fetchBusySlotsForInstructor(
   const formula = encodeURIComponent(
     `AND({Date}="${dateStr}",{Instructor Name}="${instructorName}")`
   )
-
   const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${SESSIONS_TABLE}?filterByFormula=${formula}&fields%5B%5D=Time&fields%5B%5D=Duration`
-
-  console.log(`📡 Sessions query [${instructorName} / ${dateStr}]:`, url)
 
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` },
     cache: "no-store",
   })
+  if (!res.ok) return []
 
-  if (!res.ok) {
-    const body = await res.text().catch(() => "(unreadable)")
-    console.error(`❌ Sessions fetch failed for "${instructorName}" on ${dateStr}: HTTP ${res.status} — ${body}`)
-    return []
-  }
-
-  const data = await res.json()
-  const busySet = new Set<string>()
+  const data  = await res.json()
+  const busy  = new Set<string>()
 
   for (const record of data.records ?? []) {
     const startTime   = String(record.fields["Time"]     ?? "")
@@ -139,36 +115,19 @@ async function fetchBusySlotsForInstructor(
     const hours       = parseInt(durationRaw.replace(/\D/g, ""), 10) || 1
     const startIndex  = WORKING_HOURS.indexOf(startTime)
     if (startIndex === -1) continue
-    WORKING_HOURS.slice(startIndex, startIndex + hours).forEach((s) => busySet.add(s))
+    WORKING_HOURS.slice(startIndex, startIndex + hours).forEach((s) => busy.add(s))
   }
 
-  console.log(
-    `✅ Sessions [${instructorName}] ${dateStr}: ${busySet.size} busy slot(s) —`,
-    Array.from(busySet).join(", ") || "none"
-  )
-
-  return Array.from(busySet)
+  return Array.from(busy)
 }
 
-// ---------------------------------------------------------------------------
-// Public API — same signature as before, no changes needed in booking-form.tsx
-// ---------------------------------------------------------------------------
-
-export async function getAvailableSlots(
+/** Core logic shared between single-date and batch queries */
+async function resolveDayAvailability(
   dateStr: string,
-  packageCode: string
-): Promise<{
-  busySlots: string[]
-  hasInstructors: boolean
-  availableOnDay: boolean
-  assignedInstructor: AssignedInstructor | null
-}> {
-  const licenseType = LICENSE_TYPE_MAP[packageCode] ?? "Code 8 Manual"
-  const instructors = await fetchInstructors(licenseType)
-
+  instructors: Instructor[]
+): Promise<DayAvailability> {
   if (instructors.length === 0) {
-    console.warn(`No active instructors for: ${licenseType}`)
-    return { busySlots: [], hasInstructors: false, availableOnDay: false, assignedInstructor: null }
+    return { date: dateStr, busySlots: [], hasInstructors: false, availableOnDay: false, assignedInstructor: null }
   }
 
   const dayLabel       = DAY_LABELS[new Date(dateStr + "T00:00:00").getDay()]
@@ -177,7 +136,7 @@ export async function getAvailableSlots(
   )
 
   if (availableToday.length === 0) {
-    return { busySlots: [], hasInstructors: true, availableOnDay: false, assignedInstructor: null }
+    return { date: dateStr, busySlots: [], hasInstructors: true, availableOnDay: false, assignedInstructor: null }
   }
 
   const perInstructor = await Promise.all(
@@ -187,24 +146,20 @@ export async function getAvailableSlots(
     }))
   )
 
-  // A slot is fully blocked only when ALL instructors are busy for it
-  const fullBusySlots = WORKING_HOURS.filter((slot) =>
+  // A slot is globally busy only when ALL instructors are booked for it
+  const busySlots = WORKING_HOURS.filter((slot) =>
     perInstructor.every(({ busy }) => busy.includes(slot))
   )
 
-  // Assign the instructor with the fewest sessions today (lightest load)
+  // Assign the instructor with the lightest load on this date
   const sorted = [...perInstructor].sort((a, b) => a.busy.length - b.busy.length)
   const { instructor: assigned } = sorted[0]
 
-  console.log(
-    `📅 ${dateStr} | ${licenseType} | ${availableToday.length} instructor(s) | ` +
-    `assigned: ${assigned.name} | ${fullBusySlots.length} fully blocked slot(s)`
-  )
-
   return {
-    busySlots: fullBusySlots,
-    hasInstructors: true,
-    availableOnDay: true,
+    date: dateStr,
+    busySlots,
+    hasInstructors:     true,
+    availableOnDay:     true,
     assignedInstructor: {
       firstName: assigned.firstName,
       lastName:  assigned.lastName,
@@ -212,4 +167,43 @@ export async function getAvailableSlots(
       email:     assigned.email,
     },
   }
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+/**
+ * Single-date availability — used when the user picks a date on the calendar.
+ */
+export async function getAvailableSlots(
+  dateStr: string,
+  packageCode: string
+): Promise<DayAvailability> {
+  const licenseType = LICENSE_TYPE_MAP[packageCode] ?? "Code 8 Manual"
+  const instructors = await fetchInstructors(licenseType)
+  return resolveDayAvailability(dateStr, instructors)
+}
+
+/**
+ * Batch availability — used by the auto-fill feature.
+ *
+ * Fetches instructors once, then resolves each date in parallel.
+ * Returns one DayAvailability per requested date, in the same order.
+ */
+export async function getBatchAvailability(
+  dates: string[],   // "YYYY-MM-DD"[]
+  packageCode: string
+): Promise<DayAvailability[]> {
+  if (dates.length === 0) return []
+
+  const licenseType = LICENSE_TYPE_MAP[packageCode] ?? "Code 8 Manual"
+  const instructors = await fetchInstructors(licenseType)   // single fetch for all dates
+
+  // Resolve all dates concurrently
+  const results = await Promise.all(
+    dates.map((dateStr) => resolveDayAvailability(dateStr, instructors))
+  )
+
+  return results
 }
