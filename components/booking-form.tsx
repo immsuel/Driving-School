@@ -37,7 +37,7 @@ const packages = [
 const PAYMENT_METHODS = [
   { id: "eft",     label: "Instant EFT", icon: Banknote,   description: "Direct bank transfer" },
   { id: "ewallet", label: "E-Wallet",    icon: Wallet,     description: "Send to mobile wallet" },
-  { id: "card",    label: "Card",        icon: CreditCard, description: "Debit or credit card" },
+  { id: "card",    label: "Card",        icon: CreditCard, description: "Debit or credit card via PayFast" },
   { id: "cash",    label: "Cash",        icon: Smartphone, description: "Pay on first session" },
 ]
 
