@@ -621,37 +621,27 @@ export default function AdminBookingPage() {
     const phone = normaliseSAPhone(student.phone) ?? student.phone
 
     const payload = {
-      bookingCategory:     "individual",
-      vehicle:             selectedVehicle!.label,
-      vehicleCode:         selectedVehicle!.code,
-      hoursBooked:         hours,
-      pricePerHour:        selectedVehicle!.pricePerHour,
-      addons:              selectedAddons.map(id => ADDONS.find(a => a.id === id)?.label),
-      totalPrice:          `R${grandTotal.toLocaleString("en-ZA")}`,
-      firstName:           student.firstName,
-      lastName:            student.lastName,
-      email:               student.email,
-      phone,
-      pickupAddress:       student.location,
-      preferredContact:    student.contactMethod,
-      paymentMethod,
-      paid:                paymentMethod === "cash" ? 1 : 0,
-      popiaConsent:        true,
-      bookedByAdmin:       true,
-      instructorFirstName: assignedInstructor?.firstName ?? null,
-      instructorLastName:  assignedInstructor?.lastName  ?? null,
-      instructorPhone:     assignedInstructor?.phone     ?? null,
-      instructorEmail:     assignedInstructor?.email     ?? null,
-      sessions: sessions.map(s => ({
-        date:          toDateStr(s.date),
-        time:          s.time,
-        duration:      `${s.duration}h`,
-        phone,
-        formattedSlot: `${fmtDate(s.date)} @ ${s.time} (${s.duration}h)`,
-      })),
-      bookingRef: ref,
-      timestamp:  new Date().toISOString(),
-    }
+  package:              selectedPkg.label,
+  totalHours:           selectedPkg.days,
+  firstName:            formData.firstName,
+  lastName:             formData.lastName,
+  email:                formData.email,
+  phone:                normalisedPhone,
+  pickupAddress:        formData.location,
+  paymentMethod:        method,
+  paid:                 isCash ? 1 : 0,
+  instructorFirstName:  assignedInstructor?.firstName ?? null,
+  instructorLastName:   assignedInstructor?.lastName  ?? null,
+  instructorPhone:      assignedInstructor?.phone     ?? null,
+  sessions:             selectedDays
+    .sort((a, b) => a.getTime() - b.getTime())
+    .map((d) => ({
+      date:          toDateStr(d),
+      formattedDate: d.toLocaleDateString("en-ZA", { weekday: "long", day: "2-digit", month: "short" }),
+    })),
+  bookingRef:           ref,
+  timestamp:            new Date().toISOString(),
+}
 
     try {
       const res = await fetch(BOOKING_API, {
