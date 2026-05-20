@@ -157,19 +157,18 @@ async function resolveDayAvailability(
   }
 
   const perInstructor = await Promise.all(
-    availableToday.map(async (instructor) => ({
-      instructor,
-      busy:       await fetchBusySlotsForInstructor(dateStr, instructor.name),
-      hasSession: await hasAnySessionOnDate(dateStr, instructor.name),
-    }))
+  availableToday.map(async (instructor) => ({
+    instructor,
+    busy: await fetchBusySlotsForInstructor(dateStr, instructor.name),
+  }))
   )
 
   const busySlots = WORKING_HOURS.filter((slot) =>
     perInstructor.every(({ busy }) => busy.includes(slot))
   )
 
-  const allInstructorsBooked = perInstructor.every(({ busy, hasSession }) =>
-    busy.length >= WORKING_HOURS.length || hasSession
+  const allInstructorsBooked = perInstructor.every(({ busy }) =>
+  busy.length >= WORKING_HOURS.length
   )
 
   const sorted = [...perInstructor].sort((a, b) => a.busy.length - b.busy.length)

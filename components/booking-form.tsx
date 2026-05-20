@@ -824,12 +824,14 @@ export default function LifestyleBookingForm() {
       paymentMethod:    method,
       paid:             isCash ? 1 : 0,
       popiaConsent:     true,
-      sessions:         selectedDays
-        .sort((a, b) => a.getTime() - b.getTime())
-        .map((d) => ({
-          date:          toDateStr(d),
-          formattedDate: d.toLocaleDateString("en-ZA", { weekday: "long", day: "2-digit", month: "short" }),
-        })),
+      sessions: selectedDays
+      .sort((a, b) => a.getTime() - b.getTime())
+      .map((d) => ({
+        date:          toDateStr(d),
+        formattedDate: d.toLocaleDateString("en-ZA", { weekday: "long", day: "2-digit", month: "short" }),
+        time:          "08:00",      // start of day
+        duration:      "10h",        // covers all 10 working slots (08:00–17:00)
+      })),
       bookingRef:       ref,
       timestamp:        new Date().toISOString(),
     }
