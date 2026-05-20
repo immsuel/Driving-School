@@ -60,6 +60,24 @@ export interface DayAvailability {
 // Internal helpers
 // ---------------------------------------------------------------------------
 
+async function hasAnySessionOnDate(
+  dateStr: string,
+  instructorName: string
+): Promise<boolean> {
+  const formula = encodeURIComponent(
+    `AND({Date}="${dateStr}",{Instructor Name}="${instructorName}")`
+  )
+  const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${SESSIONS_TABLE}?filterByFormula=${formula}&fields%5B%5D=Date`
+
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` },
+    cache: "no-store",
+  })
+  if (!res.ok) return false
+  const data = await res.json()
+  return (data.records ?? []).length > 0
+}
+
 async function fetchInstructors(licenseType: string): Promise<Instructor[]> {
   const formula = encodeURIComponent(
     `AND({Active}=1,FIND("${licenseType}",ARRAYJOIN({License Types},","))>0)`
@@ -140,16 +158,19 @@ async function resolveDayAvailability(
   const perInstructor = await Promise.all(
     availableToday.map(async (instructor) => ({
       instructor,
-      busy: await fetchBusySlotsForInstructor(dateStr, instructor.name),
+      busy:       await fetchBusySlotsForInstructor(dateStr, instructor.name),
+      hasSession: await hasAnySessionOnDate(dateStr, instructor.name),
     }))
   )
 
-  // A slot is globally busy only when ALL instructors are booked for it
   const busySlots = WORKING_HOURS.filter((slot) =>
     perInstructor.every(({ busy }) => busy.includes(slot))
   )
 
-  // Assign the instructor with the lightest load on this date
+  const allInstructorsBooked = perInstructor.every(({ busy, hasSession }) =>
+    busy.length >= WORKING_HOURS.length || hasSession
+  )
+
   const sorted = [...perInstructor].sort((a, b) => a.busy.length - b.busy.length)
   const { instructor: assigned } = sorted[0]
 
@@ -157,7 +178,7 @@ async function resolveDayAvailability(
     date: dateStr,
     busySlots,
     hasInstructors:     true,
-    availableOnDay: busySlots.length < WORKING_HOURS.length,
+    availableOnDay:     !allInstructorsBooked,
     assignedInstructor: {
       firstName: assigned.firstName,
       lastName:  assigned.lastName,
