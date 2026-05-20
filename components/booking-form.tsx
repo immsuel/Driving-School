@@ -234,7 +234,7 @@ function PopiaStep({ agreed, onAgree }: { agreed: boolean; onAgree: (v: boolean)
           Protection of Personal Information Act (POPIA) — Notice
         </p>
         <p>
-          DriveRight South Africa (Pty) Ltd collects and processes your personal information — including
+          Dee's Driver Training South Africa (Pty) Ltd collects and processes your personal information — including
           your name, contact details, and booking history — for the purposes of scheduling driving lessons,
           communicating with you about your bookings, and fulfilling our obligations as a driving school.
         </p>
@@ -246,7 +246,7 @@ function PopiaStep({ agreed, onAgree }: { agreed: boolean; onAgree: (v: boolean)
         <p>
           You have the right to access, correct, or request deletion of your personal information at any
           time by contacting us at{" "}
-          <span className="text-indigo-600 font-black">info@driveright.co.za</span> or calling{" "}
+          <span className="text-indigo-600 font-black">admin@deesdrivertraining.co.za</span> or calling{" "}
           <span className="text-indigo-600 font-black">031 202 0202</span>.
         </p>
         <p>
