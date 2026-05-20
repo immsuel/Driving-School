@@ -160,19 +160,15 @@ function CalendarDayButton({
       data-day={day.date.toLocaleDateString()}
       disabled={modifiers.disabled}
       className={cn(
-        // Base Day Style: Larger touch targets, Slate text
         'size-10 rounded-xl font-bold text-xs transition-all duration-300',
         'hover:bg-slate-100 hover:text-indigo-600',
         
-        // Selected State: Solid Indigo Circle
         modifiers.selected && [
           'bg-indigo-600! text-white! rounded-xl shadow-lg shadow-indigo-100 scale-110 z-10',
         ],
-        
-        // Today Marker: Soft Indigo highlight
+            
         modifiers.today && !modifiers.selected && 'text-indigo-600 bg-indigo-50/50',
-
-        // Disabled State overrides
+       
         modifiers.disabled && 'hover:bg-transparent hover:text-slate-200 cursor-not-allowed',
         
         className,

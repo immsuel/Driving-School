@@ -35,7 +35,7 @@ export default function BookingPage() {
         <section className="border-y border-slate-100 bg-slate-50/50 py-20">
           <div className="mx-auto grid max-w-6xl grid-cols-1 gap-16 px-6 md:grid-cols-3">
             {[
-              { label: "Fleet Total", val: "15,000+", sub: "Licensed Graduates" },
+              { label: "Fleet Total", val: "200+", sub: "Licensed Graduates" },
               { label: "Success Rate", val: "95%", sub: "First-Time Pass Ratio" },
               { label: "Academy Rating", val: "4.9/5", sub: "Average Student Review" },
             ].map((stat) => (
