@@ -81,7 +81,7 @@ async function hasAnySessionOnDate(
 
 async function fetchInstructors(licenseType: string): Promise<Instructor[]> {
   const formula = encodeURIComponent(
-    `AND({Active}=1,FIND("${licenseType}",ARRAYJOIN({License Types},","))>0)`
+    `AND({Active}=TRUE(), FIND("${licenseType}", ARRAYJOIN({License Types},","))>0)`
   )
   const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${INSTRUCTORS_TABLE}?filterByFormula=${formula}`
 
