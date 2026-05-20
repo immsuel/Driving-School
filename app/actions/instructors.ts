@@ -157,7 +157,7 @@ async function resolveDayAvailability(
     date: dateStr,
     busySlots,
     hasInstructors:     true,
-    availableOnDay:     true,
+    availableOnDay: busySlots.length < WORKING_HOURS.length,
     assignedInstructor: {
       firstName: assigned.firstName,
       lastName:  assigned.lastName,
