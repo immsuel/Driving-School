@@ -810,31 +810,29 @@ export default function LifestyleBookingForm() {
     const normalisedPhone = normaliseSAPhone(formData.phone) ?? formData.phone
 
     const payload = {
-      bookingCategory:  "lifestyle",
-      vehicle:          "Light Motor Vehicle — Lifestyle Driving",
-      vehicleCode:      "LD",
-      package:          selectedPkg.label,
-      daysBooked:       selectedPkg.days,
-      totalPrice:       total,
-      firstName:        formData.firstName,
-      lastName:         formData.lastName,
-      email:            formData.email,
-      phone:            normalisedPhone,
-      pickupAddress:    formData.location,
-      paymentMethod:    method,
-      paid:             isCash ? 1 : 0,
-      popiaConsent:     true,
-      sessions: selectedDays
-      .sort((a, b) => a.getTime() - b.getTime())
-      .map((d) => ({
-        date:          toDateStr(d),
-        formattedDate: d.toLocaleDateString("en-ZA", { weekday: "long", day: "2-digit", month: "short" }),
-        time:          "08:00",      // start of day
-        duration:      "10h",        // covers all 10 working slots (08:00–17:00)
-      })),
-      bookingRef:       ref,
-      timestamp:        new Date().toISOString(),
-    }
+  package:          selectedPkg.label,
+  totalHours:       selectedPkg.days,        // 1, 5, or 10
+  firstName:        formData.firstName,
+  lastName:         formData.lastName,
+  email:            formData.email,
+  phone:            normalisedPhone,
+  pickupAddress:    formData.location,
+  paymentMethod:    method,
+  paid:             isCash ? 1 : 0,
+  instructorFirstName: "",                   // filled by Airtable automation later
+  instructorLastName:  "",
+  instructorPhone:     "",
+  sessions:         selectedDays
+    .sort((a, b) => a.getTime() - b.getTime())
+    .map((d) => ({
+      date:          toDateStr(d),
+      formattedDate: d.toLocaleDateString("en-ZA", { weekday: "long", day: "2-digit", month: "short" }),
+      time:          "08:00",
+      duration:      "10h",
+    })),
+  bookingRef:       ref,
+  timestamp:        new Date().toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" }),
+}
 
     try {
       const res = await fetch(BOOKING_API, {
