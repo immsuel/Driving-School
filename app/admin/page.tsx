@@ -186,9 +186,7 @@ function triggerPrint(params: {
     letter-spacing: 1px;
     margin-top: 2px;
   }
-  .ref-block {
-    text-align: right;
-  }
+  .ref-block { text-align: right; }
   .ref-block .ref-label {
     font-size: 9px;
     text-transform: uppercase;
@@ -203,14 +201,8 @@ function triggerPrint(params: {
     letter-spacing: 2px;
     color: #111;
   }
-  .ref-block .ref-date {
-    font-size: 10px;
-    color: #888;
-    margin-top: 3px;
-  }
-  .section {
-    margin-bottom: 22px;
-  }
+  .ref-block .ref-date { font-size: 10px; color: #888; margin-top: 3px; }
+  .section { margin-bottom: 22px; }
   .section-title {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 9px;
@@ -222,84 +214,17 @@ function triggerPrint(params: {
     padding-bottom: 5px;
     margin-bottom: 10px;
   }
-  .grid-2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px 24px;
-  }
-  .field label {
-    display: block;
-    font-size: 9px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #aaa;
-    margin-bottom: 1px;
-  }
-  .field span {
-    font-size: 12px;
-    font-weight: 600;
-    color: #111;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 11px;
-  }
-  table th {
-    text-align: left;
-    font-size: 9px;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #aaa;
-    padding: 4px 0;
-    border-bottom: 1px solid #e5e5e5;
-  }
-  table td {
-    padding: 6px 0;
-    border-bottom: 1px solid #f2f2f2;
-    color: #222;
-  }
-  .totals-table td {
-    border: none;
-    padding: 3px 0;
-  }
-  .totals-table .grand-total td {
-    font-size: 14px;
-    font-weight: 700;
-    padding-top: 10px;
-    border-top: 2px solid #111;
-    font-family: 'IBM Plex Mono', monospace;
-  }
-  .footer {
-    margin-top: 32px;
-    padding-top: 16px;
-    border-top: 1px solid #e5e5e5;
-    display: flex;
-    justify-content: space-between;
-    font-size: 9px;
-    color: #aaa;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
-  .stamp {
-    display: inline-block;
-    border: 2px solid #22c55e;
-    color: #22c55e;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    padding: 4px 12px;
-    border-radius: 3px;
-    transform: rotate(-2deg);
-    margin-top: 4px;
-    display: block;
-    width: fit-content;
-  }
-  @media print {
-    body { padding: 16px 20px; }
-  }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; }
+  .field label { display: block; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #aaa; margin-bottom: 1px; }
+  .field span { font-size: 12px; font-weight: 600; color: #111; }
+  table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  table th { text-align: left; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #aaa; padding: 4px 0; border-bottom: 1px solid #e5e5e5; }
+  table td { padding: 6px 0; border-bottom: 1px solid #f2f2f2; color: #222; }
+  .totals-table td { border: none; padding: 3px 0; }
+  .totals-table .grand-total td { font-size: 14px; font-weight: 700; padding-top: 10px; border-top: 2px solid #111; font-family: 'IBM Plex Mono', monospace; }
+  .footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid #e5e5e5; display: flex; justify-content: space-between; font-size: 9px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+  .stamp { display: inline-block; border: 2px solid #22c55e; color: #22c55e; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 4px 12px; border-radius: 3px; transform: rotate(-2deg); margin-top: 4px; display: block; width: fit-content; }
+  @media print { body { padding: 16px 20px; } }
 </style>
 </head>
 <body>
@@ -349,11 +274,7 @@ ${assignedInstructor ? `
 <div class="section">
   <div class="section-title">Scheduled Sessions</div>
   <table>
-    <thead>
-      <tr>
-        <th>#</th><th>Date</th><th>Start Time</th><th>Duration</th>
-      </tr>
-    </thead>
+    <thead><tr><th>#</th><th>Date</th><th>Start Time</th><th>Duration</th></tr></thead>
     <tbody>${sessionLines}</tbody>
   </table>
 </div>
@@ -364,7 +285,7 @@ ${assignedInstructor ? `
     <tbody>
       <tr><td>Session (${hours}h × R${vehicle.pricePerHour})</td><td style="text-align:right">R${(vehicle.pricePerHour * hours).toLocaleString("en-ZA")}</td></tr>
       ${addonLines}
-      <tr class="grand-total"><td><td style="text-align:right">R${grandTotal.toLocaleString("en-ZA")}</td></tr>
+      <tr class="grand-total"><td></td><td style="text-align:right">R${grandTotal.toLocaleString("en-ZA")}</td></tr>
     </tbody>
   </table>
 </div>
@@ -469,6 +390,9 @@ export default function AdminBookingPage() {
   const [assignedInstructor, setAssignedInstructor] = useState<AssignedInstructor | null>(null)
   const [checkingAvail, setCheckingAvail]     = useState(false)
 
+  // NEW: per-date instructor map so each session carries the right instructor
+  const [sessionInstructors, setSessionInstructors] = useState<Record<string, AssignedInstructor>>({})
+
   // ── Auto-fill ──
   const [repeatMode, setRepeatMode]           = useState<RepeatMode>("none")
   const [autoFillLoading, setAutoFillLoading] = useState(false)
@@ -533,6 +457,10 @@ export default function AdminBookingPage() {
         setAvailableOnDay(r.availableOnDay)
         setNoInstructors(!r.hasInstructors)
         setAssignedInstructor(r.assignedInstructor)
+        // Store instructor for this date in the per-date map
+        if (r.assignedInstructor) {
+          setSessionInstructors(prev => ({ ...prev, [toDateStr(calDate)]: r.assignedInstructor! }))
+        }
       })
       .catch(() => { if (!ctrl.signal.aborted) console.error("Avail check failed") })
       .finally(() => { if (!ctrl.signal.aborted) setCheckingAvail(false) })
@@ -576,6 +504,15 @@ export default function AdminBookingPage() {
       const proposed: typeof autoFillPreview["proposed"] = []
       const skipped: Date[] = []
 
+      // Store instructors for all auto-fill candidate dates
+      const newInstructors: Record<string, AssignedInstructor> = {}
+      results.forEach((day, i) => {
+        if (day.assignedInstructor) {
+          newInstructors[toDateStr(candidates[i])] = day.assignedInstructor
+        }
+      })
+      setSessionInstructors(prev => ({ ...prev, ...newInstructors }))
+
       for (let i = 0; i < results.length; i++) {
         if (proposed.filter(p => p.available).length >= 3) break
         const day = results[i]
@@ -614,34 +551,42 @@ export default function AdminBookingPage() {
   // ---------------------------------------------------------------------------
 
   const handleSubmit = async () => {
-    if (!canSubmit) return
+    if (!canSubmit || !selectedVehicle) return
     setSubmitting(true)
     setSubmitError("")
-    const ref = genRef()
+    const ref   = genRef()
     const phone = normaliseSAPhone(student.phone) ?? student.phone
 
     const payload = {
-  package:              selectedPkg.label,
-  totalHours:           selectedPkg.days,
-  firstName:            formData.firstName,
-  lastName:             formData.lastName,
-  email:                formData.email,
-  phone:                normalisedPhone,
-  pickupAddress:        formData.location,
-  paymentMethod:        method,
-  paid:                 isCash ? 1 : 0,
-  instructorFirstName:  assignedInstructor?.firstName ?? null,
-  instructorLastName:   assignedInstructor?.lastName  ?? null,
-  instructorPhone:      assignedInstructor?.phone     ?? null,
-  sessions:             selectedDays
-    .sort((a, b) => a.getTime() - b.getTime())
-    .map((d) => ({
-      date:          toDateStr(d),
-      formattedDate: d.toLocaleDateString("en-ZA", { weekday: "long", day: "2-digit", month: "short" }),
-    })),
-  bookingRef:           ref,
-  timestamp:            new Date().toISOString(),
-}
+      package:       selectedVehicle.label,
+      totalHours:    hours,
+      firstName:     student.firstName,
+      lastName:      student.lastName,
+      email:         student.email,
+      phone,
+      pickupAddress: student.location,
+      contactMethod: student.contactMethod,
+      paymentMethod,
+      paid:          paymentMethod === "cash" ? 1 : 0,
+      addons:        selectedAddons,
+      grandTotal,
+      // Per-session instructor looked up from the date map
+      sessions: sessions.map((s) => {
+        const dateStr    = toDateStr(s.date)
+        const instructor = sessionInstructors[dateStr]
+        return {
+          date:                dateStr,
+          formattedDate:       s.date.toLocaleDateString("en-ZA", { weekday: "long", day: "2-digit", month: "short" }),
+          time:                s.time,
+          duration:            `${s.duration}h`,
+          instructorFirstName: instructor?.firstName ?? "",
+          instructorLastName:  instructor?.lastName  ?? "",
+          instructorPhone:     instructor?.phone     ?? "",
+        }
+      }),
+      bookingRef: ref,
+      timestamp:  new Date().toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" }),
+    }
 
     try {
       const res = await fetch(BOOKING_API, {
@@ -652,11 +597,11 @@ export default function AdminBookingPage() {
       if (res.ok) {
         setResult({
           ref,
-          studentName: `${student.firstName} ${student.lastName}`,
-          vehicle: selectedVehicle!,
+          studentName:        `${student.firstName} ${student.lastName}`,
+          vehicle:            selectedVehicle,
           hours,
           sessions,
-          addons: selectedAddons,
+          addons:             selectedAddons,
           paymentMethod,
           grandTotal,
           assignedInstructor,
@@ -677,6 +622,7 @@ export default function AdminBookingPage() {
     setSelectedVehicle(null); setHours(MIN_HOURS); setSelectedAddons([]); setPaymentMethod("cash")
     setSessions([]); setCalDate(undefined); setSelTime(""); setBusySlots([])
     setAvailableOnDay(true); setNoInstructors(false); setAssignedInstructor(null)
+    setSessionInstructors({})
     setRepeatMode("none"); setAutoFillPreview(null); setResult(null); setSubmitError("")
   }
 
@@ -831,7 +777,7 @@ export default function AdminBookingPage() {
                     {INDIVIDUAL_VEHICLES.map(v => (
                       <button
                         key={v.id}
-                        onClick={() => { setSelectedVehicle(v); setCalDate(undefined); setSelTime(""); setSessions([]) }}
+                        onClick={() => { setSelectedVehicle(v); setCalDate(undefined); setSelTime(""); setSessions([]); setSessionInstructors({}) }}
                         className={`flex items-center justify-between px-3 py-2.5 rounded-xl border text-left transition-all ${
                           selectedVehicle?.id === v.id
                             ? "border-stone-700 bg-stone-800 text-white"
@@ -850,7 +796,7 @@ export default function AdminBookingPage() {
                     {ADVANCE_VEHICLES.map(v => (
                       <button
                         key={v.id}
-                        onClick={() => { setSelectedVehicle(v); setCalDate(undefined); setSelTime(""); setSessions([]) }}
+                        onClick={() => { setSelectedVehicle(v); setCalDate(undefined); setSelTime(""); setSessions([]); setSessionInstructors({}) }}
                         className={`flex items-center justify-between px-3 py-2.5 rounded-xl border text-left transition-all ${
                           selectedVehicle?.id === v.id
                             ? "border-stone-700 bg-stone-800 text-white"
