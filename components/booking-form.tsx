@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button }   from "@/components/ui/button"
 import { Input }    from "@/components/ui/input"
 import { Label }    from "@/components/ui/label"
@@ -10,10 +10,7 @@ import {
   AlertCircle, Banknote, X, Info, Shield,
 } from "lucide-react"
 
-// Server action — make sure "LD" is in LICENSE_TYPE_MAP in instructors.ts:
-//   "LD": "Lifestyle Driving"
-// And that Airtable Instructors records have "Lifestyle Driving" as a licence type.
-import { getBatchAvailability } from "@/app/actions/instructors"
+import { getBatchAvailability, type AssignedInstructor } from "@/app/actions/instructors"
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -368,15 +365,17 @@ function DaySelectionStep({
   selectedDays,
   onToggle,
   onDeselect,
+  onInstructorsResolved,
 }: {
-  pkg:        LDPackage
-  selectedDays: Date[]
-  onToggle:   (d: Date) => void
-  onDeselect: (d: Date) => void
+  pkg:                    LDPackage
+  selectedDays:           Date[]
+  onToggle:               (d: Date) => void
+  onDeselect:             (d: Date) => void
+  // NEW: called whenever availability resolves — passes back a map of date → instructor
+  onInstructorsResolved:  (map: Record<string, AssignedInstructor>) => void
 }) {
   const earliest = minBookableDate()
 
-  // Which year/month is the calendar currently showing
   const [calMonth, setCalMonth] = useState<Date>(() => {
     const d = new Date()
     d.setDate(1)
@@ -384,15 +383,12 @@ function DaySelectionStep({
     return d
   })
 
-  // Set of "YYYY-MM-DD" strings that Airtable says have no available instructor
-  const [unavailableDates, setUnavailableDates] = useState<Set<string>>(new Set())
+  const [unavailableDates, setUnavailableDates]         = useState<Set<string>>(new Set())
   const [isLoadingAvailability, setIsLoadingAvailability] = useState(false)
-  const [availabilityError, setAvailabilityError] = useState(false)
+  const [availabilityError, setAvailabilityError]       = useState(false)
 
-  // Abort controller so navigating months quickly doesn't pile up stale fetches
   const fetchController = useRef<AbortController | null>(null)
 
-  // Fetch availability for every bookable weekday in the visible month
   useEffect(() => {
     if (fetchController.current) fetchController.current.abort()
     const controller = new AbortController()
@@ -409,12 +405,23 @@ function DaySelectionStep({
         if (controller.signal.aborted) return
 
         const blocked = new Set<string>()
-        results.forEach((r) => {
-          if (!r.hasInstructors || !r.availableOnDay) blocked.add(r.date)
-        })
-        setUnavailableDates(blocked)
+        // NEW: build a date → instructor map from this batch
+        const instructorMap: Record<string, AssignedInstructor> = {}
 
-        // If any already-selected days just became unavailable, deselect them
+        results.forEach((r) => {
+          if (!r.hasInstructors || !r.availableOnDay) {
+            blocked.add(r.date)
+          }
+          if (r.assignedInstructor) {
+            instructorMap[r.date] = r.assignedInstructor
+          }
+        })
+
+        setUnavailableDates(blocked)
+        // Bubble the instructor map up to the parent so it can be used at submit time
+        onInstructorsResolved(instructorMap)
+
+        // Deselect any days that just became unavailable
         selectedDays.forEach((d) => {
           if (blocked.has(toDateStr(d))) onDeselect(d)
         })
@@ -458,7 +465,6 @@ function DaySelectionStep({
 
       {/* Calendar */}
       <div className="relative">
-        {/* Loading overlay */}
         {isLoadingAvailability && (
           <div className="absolute inset-0 z-10 rounded-2xl bg-white/70 flex items-center justify-center gap-2 backdrop-blur-[1px]">
             <Loader2 className="h-5 w-5 animate-spin text-indigo-500" />
@@ -489,9 +495,8 @@ function DaySelectionStep({
               const d = new Date(date)
               d.setHours(0, 0, 0, 0)
               if (d < earliest)    return true
-              if (d.getDay() === 0) return true  // Sunday (calendar.tsx also blocks Saturday)
+              if (d.getDay() === 0) return true
               if (isUnavailable(d)) return true
-              // Already at limit — disable unselected dates
               if (!selectedDays.some((s) => s.toDateString() === d.toDateString()) && selectedDays.length >= pkg.days) return true
               return false
             }}
@@ -500,7 +505,6 @@ function DaySelectionStep({
         </div>
       </div>
 
-      {/* Availability fetch error */}
       {availabilityError && (
         <StatusBanner variant="warning">
           Couldn't load availability — please try again or contact us directly.
@@ -747,6 +751,8 @@ export default function LifestyleBookingForm() {
   const [popiaConsent, setPopiaConsent]   = useState(false)
   const [selectedPkg, setSelectedPkg]     = useState<LDPackage | null>(null)
   const [selectedDays, setSelectedDays]   = useState<Date[]>([])
+  // NEW: stores the assigned instructor for each available date returned by getBatchAvailability
+  const [sessionInstructors, setSessionInstructors] = useState<Record<string, AssignedInstructor>>({})
   const [formData, setFormData]           = useState<FormData>({
     firstName: "", lastName: "", email: "", phone: "", location: "",
   })
@@ -770,13 +776,20 @@ export default function LifestyleBookingForm() {
     })
   }
 
-  // Called by DaySelectionStep when availability check retroactively blocks a selected date
   const deselectDay = (d: Date) => {
     setSelectedDays((prev) => prev.filter((s) => s.toDateString() !== d.toDateString()))
   }
 
-  // Reset selections when package changes
-  useEffect(() => { setSelectedDays([]) }, [selectedPkg?.id])
+  // NEW: merge incoming instructor map with any already stored (covers multi-month browsing)
+  const handleInstructorsResolved = (map: Record<string, AssignedInstructor>) => {
+    setSessionInstructors((prev) => ({ ...prev, ...map }))
+  }
+
+  // Reset selections and cached instructor data when package changes
+  useEffect(() => {
+    setSelectedDays([])
+    setSessionInstructors({})
+  }, [selectedPkg?.id])
 
   // ── Validation ──────────────────────────────────────────────────────────────
 
@@ -809,30 +822,35 @@ export default function LifestyleBookingForm() {
     setBookingRef(ref)
     const normalisedPhone = normaliseSAPhone(formData.phone) ?? formData.phone
 
+    const sortedDays = [...selectedDays].sort((a, b) => a.getTime() - b.getTime())
+
     const payload = {
-  package:          selectedPkg.label,
-  totalHours:       selectedPkg.days,        // 1, 5, or 10
-  firstName:        formData.firstName,
-  lastName:         formData.lastName,
-  email:            formData.email,
-  phone:            normalisedPhone,
-  pickupAddress:    formData.location,
-  paymentMethod:    method,
-  paid:             isCash ? 1 : 0,
-  instructorFirstName: "",                   // filled by Airtable automation later
-  instructorLastName:  "",
-  instructorPhone:     "",
-  sessions:         selectedDays
-    .sort((a, b) => a.getTime() - b.getTime())
-    .map((d) => ({
-      date:          toDateStr(d),
-      formattedDate: d.toLocaleDateString("en-ZA", { weekday: "long", day: "2-digit", month: "short" }),
-      time:          "08:00",
-      duration:      "10h",
-    })),
-  bookingRef:       ref,
-  timestamp:        new Date().toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" }),
-}
+      package:       selectedPkg.label,
+      totalHours:    selectedPkg.days,
+      firstName:     formData.firstName,
+      lastName:      formData.lastName,
+      email:         formData.email,
+      phone:         normalisedPhone,
+      pickupAddress: formData.location,
+      paymentMethod: method,
+      paid:          isCash ? 1 : 0,
+      // NEW: per-session instructor fields — looked up from the map captured during day selection
+      sessions: sortedDays.map((d) => {
+        const dateStr    = toDateStr(d)
+        const instructor = sessionInstructors[dateStr]
+        return {
+          date:                dateStr,
+          formattedDate:       d.toLocaleDateString("en-ZA", { weekday: "long", day: "2-digit", month: "short" }),
+          time:                "08:00",
+          duration:            "10h",
+          instructorFirstName: instructor?.firstName ?? "",
+          instructorLastName:  instructor?.lastName  ?? "",
+          instructorPhone:     instructor?.phone     ?? "",
+        }
+      }),
+      bookingRef: ref,
+      timestamp:  new Date().toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" }),
+    }
 
     try {
       const res = await fetch(BOOKING_API, {
@@ -897,6 +915,7 @@ export default function LifestyleBookingForm() {
             selectedDays={selectedDays}
             onToggle={toggleDay}
             onDeselect={deselectDay}
+            onInstructorsResolved={handleInstructorsResolved}
           />
         )}
 
