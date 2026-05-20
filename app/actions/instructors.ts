@@ -75,6 +75,7 @@ async function hasAnySessionOnDate(
   })
   if (!res.ok) return false
   const data = await res.json()
+  console.log(`hasAnySessionOnDate(${dateStr}, ${instructorName}):`, JSON.stringify(data))
   return (data.records ?? []).length > 0
 }
 
