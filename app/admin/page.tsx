@@ -6,7 +6,7 @@ import {
   CheckCircle2, Loader2, Trash2, PlusCircle, AlertCircle,
   CreditCard, Banknote, Smartphone, Wallet, X, CalendarDays,
   User, Phone, Mail, MapPin, Car, Clock, ChevronRight,
-  RotateCcw, Zap, RefreshCw, Search, BadgeCheck, Receipt,
+  RotateCcw, Zap, RefreshCw, Search, BadgeCheck, Receipt, Users,
   MessageCircle, MessageSquare,
 } from "lucide-react"
 
@@ -605,6 +605,7 @@ export default function AdminBookingPage() {
         }
       }),
       bookingRef: ref,
+      source:     "Admin Booking",
       timestamp:  new Date().toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" }),
     }
 
@@ -715,12 +716,20 @@ export default function AdminBookingPage() {
               <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Admin — Walk-in Booking</p>
             </div>
           </div>
-          <button
-            onClick={resetForm}
-            className="flex items-center gap-2 h-8 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 text-[10px] font-black uppercase tracking-widest transition-all"
-          >
-            <RotateCcw className="h-3 w-3" /> Reset
-          </button>
+          <div className="flex items-center gap-2">
+            <a
+              href="/students"
+              className="flex items-center gap-2 h-8 px-3 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 hover:text-indigo-700 text-[10px] font-black uppercase tracking-widest transition-all border border-indigo-200"
+            >
+              <Users className="h-3 w-3" /> Students
+            </a>
+            <button
+              onClick={resetForm}
+              className="flex items-center gap-2 h-8 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 text-[10px] font-black uppercase tracking-widest transition-all"
+            >
+              <RotateCcw className="h-3 w-3" /> Reset
+            </button>
+          </div>
         </div>
       </div>
 
