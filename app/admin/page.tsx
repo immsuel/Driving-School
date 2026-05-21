@@ -427,11 +427,12 @@ export default function AdminBookingPage() {
   const vehiclePrice  = (selectedVehicle?.pricePerHour ?? 0) * hours
   const addonTotal    = selectedAddons.reduce((s, id) => s + (ADDONS.find(a => a.id === id)?.price ?? 0), 0)
   const grandTotal    = vehiclePrice + addonTotal
+  const isLifestyleDriving = selectedVehicle?.code === "LD"
   const studentValid  = !!student.firstName && !!student.lastName && isValidSAPhone(student.phone)
-  const courseValid   = !!selectedVehicle && hours >= MIN_HOURS
+  const courseValid   = !!selectedVehicle && (isLifestyleDriving || hours >= MIN_HOURS)
   const scheduleValid = sessions.length > 0
   const canSubmit     = studentValid && courseValid && scheduleValid && !!paymentMethod && !submitting
-  const canShowAutoFill = !!calDate && !!selTime && availableOnDay && !noInstructors && !checkingAvail
+  const canShowAutoFill = !!calDate && (isLifestyleDriving || !!selTime) && availableOnDay && !noInstructors && !checkingAvail
 
   // ---------------------------------------------------------------------------
   // Availability
@@ -461,6 +462,14 @@ export default function AdminBookingPage() {
         if (r.assignedInstructor) {
           setSessionInstructors(prev => ({ ...prev, [toDateStr(calDate)]: r.assignedInstructor! }))
         }
+        // Lifestyle Driving: auto-add date as session immediately (no time picker needed)
+        if (selectedVehicle?.code === "LD" && r.availableOnDay && r.hasInstructors) {
+          setSessions(prev => {
+            const alreadyAdded = prev.some(s => s.date.toDateString() === calDate.toDateString())
+            if (alreadyAdded) return prev
+            return [...prev, { date: calDate, time: "08:00", duration: 10 }]
+          })
+        }
       })
       .catch(() => { if (!ctrl.signal.aborted) console.error("Avail check failed") })
       .finally(() => { if (!ctrl.signal.aborted) setCheckingAvail(false) })
@@ -475,7 +484,15 @@ export default function AdminBookingPage() {
   // ---------------------------------------------------------------------------
 
   const addSession = () => {
-    if (!calDate || !selTime) return
+    if (!calDate) return
+    if (isLifestyleDriving) {
+      const alreadyAdded = sessions.some(s => s.date.toDateString() === calDate.toDateString())
+      if (alreadyAdded) return
+      setSessions(prev => [...prev, { date: calDate, time: "08:00", duration: 10 }])
+      setCalDate(undefined)
+      return
+    }
+    if (!selTime) return
     const range = getBlockedSlots(selTime, hours)
     const overlap = sessions.some(s =>
       s.date.toDateString() === calDate.toDateString() &&
@@ -869,13 +886,26 @@ export default function AdminBookingPage() {
                 </div>
 
                 <div className="space-y-4">
-                  {!calDate && (
+                  {!calDate && !isLifestyleDriving && (
                     <div className="flex items-center gap-3 h-full min-h-[120px]">
                       <p className="text-[11px] font-bold text-slate-300 uppercase tracking-widest">← Select a date to see time slots</p>
                     </div>
                   )}
 
-                  {calDate && !checkingAvail && availableOnDay && !noInstructors && (
+                  {isLifestyleDriving && !calDate && (
+                    <div className="flex items-center gap-3 h-full min-h-[120px]">
+                      <p className="text-[11px] font-bold text-slate-300 uppercase tracking-widest">← Select a date to add it</p>
+                    </div>
+                  )}
+
+                  {isLifestyleDriving && calDate && !checkingAvail && availableOnDay && !noInstructors && (
+                    <div className="flex items-start gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-[11px] font-bold uppercase">
+                      <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 shrink-0" />
+                      {fmtDate(calDate)} added — pick more dates or continue.
+                    </div>
+                  )}
+
+                  {!isLifestyleDriving && calDate && !checkingAvail && availableOnDay && !noInstructors && (
                     <>
                       <div className="grid grid-cols-4 gap-2">
                         {WORKING_HOURS.map((time, idx) => {
