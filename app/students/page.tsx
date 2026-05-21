@@ -251,6 +251,8 @@ export default function StudentsPage() {
       if (studentDraft.pickupAddress !== undefined) fields["Pickup Address"] = studentDraft.pickupAddress
       if (studentDraft.package       !== undefined) fields["Package"]        = studentDraft.package
       if (studentDraft.lessons       !== undefined) fields["Lessons"]        = studentDraft.lessons
+      if (studentDraft.lessonsDone   !== undefined) fields["Lessons Done"]   = studentDraft.lessonsDone
+      if (studentDraft.paid          !== undefined) fields["Paid"]           = studentDraft.paid ? "checked" : ""
       await api.students.patch(selected.id, fields)
       const updated = { ...selected, ...studentDraft } as Student
       setSelected(updated)
@@ -482,8 +484,29 @@ export default function StudentsPage() {
                       <Field label="Package">
                         <input value={studentDraft.package ?? ""} onChange={e => setStudentDraft(d => ({ ...d, package: e.target.value }))} className={inputCls} />
                       </Field>
-                      <Field label="Total Lessons">
-                        <input type="number" value={studentDraft.lessons ?? 0} onChange={e => setStudentDraft(d => ({ ...d, lessons: Number(e.target.value) }))} className={inputCls} />
+                      <div className="grid grid-cols-2 gap-3">
+                        <Field label="Total Lessons">
+                          <input type="number" min={0} value={studentDraft.lessons ?? 0} onChange={e => setStudentDraft(d => ({ ...d, lessons: Number(e.target.value) }))} className={inputCls} />
+                        </Field>
+                        <Field label="Lessons Done">
+                          <input type="number" min={0} value={studentDraft.lessonsDone ?? 0} onChange={e => setStudentDraft(d => ({ ...d, lessonsDone: Number(e.target.value) }))} className={inputCls} />
+                        </Field>
+                      </div>
+                      <Field label="Paid">
+                        <button
+                          type="button"
+                          onClick={() => setStudentDraft(d => ({ ...d, paid: !d.paid }))}
+                          className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm font-bold transition-all ${
+                            studentDraft.paid
+                              ? "bg-emerald-50 border-emerald-200 text-emerald-700"
+                              : "bg-slate-50 border-slate-200 text-slate-500"
+                          }`}
+                        >
+                          <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center transition-all ${studentDraft.paid ? "border-emerald-500 bg-emerald-500" : "border-slate-300"}`}>
+                            {studentDraft.paid && <div className="h-1.5 w-1.5 rounded-full bg-white" />}
+                          </div>
+                          {studentDraft.paid ? "Paid" : "Not paid"}
+                        </button>
                       </Field>
                       {saveError && (
                         <div className="flex gap-2 text-xs font-bold text-red-600 p-2 rounded-lg bg-red-50">
