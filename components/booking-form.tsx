@@ -244,7 +244,7 @@ function PopiaStep({ agreed, onAgree }: { agreed: boolean; onAgree: (v: boolean)
           You have the right to access, correct, or request deletion of your personal information at any
           time by contacting us at{" "}
           <span className="text-indigo-600 font-black">admin@deesdrivertraining.co.za</span> or calling{" "}
-          <span className="text-indigo-600 font-black">031 202 0202</span>.
+          <span className="text-indigo-600 font-black">082 440 6585</span>.
         </p>
         <p>
           Withdrawal of consent may affect your ability to use our services. By proceeding you confirm
