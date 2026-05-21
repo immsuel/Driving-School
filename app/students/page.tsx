@@ -251,8 +251,7 @@ export default function StudentsPage() {
       if (studentDraft.pickupAddress !== undefined) fields["Pickup Address"] = studentDraft.pickupAddress
       if (studentDraft.package       !== undefined) fields["Package"]        = studentDraft.package
       if (studentDraft.lessons       !== undefined) fields["Lessons"]        = studentDraft.lessons
-      if (studentDraft.lessonsDone   !== undefined) fields["Lessons Done"]   = studentDraft.lessonsDone
-      if (studentDraft.paid          !== undefined) fields["Paid"]           = studentDraft.paid ? "checked" : ""
+      if (studentDraft.paid          !== undefined) fields["Paid"]           = studentDraft.paid ? true : false
       await api.students.patch(selected.id, fields)
       const updated = { ...selected, ...studentDraft } as Student
       setSelected(updated)
@@ -487,9 +486,6 @@ export default function StudentsPage() {
                       <div className="grid grid-cols-2 gap-3">
                         <Field label="Total Lessons">
                           <input type="number" min={0} value={studentDraft.lessons ?? 0} onChange={e => setStudentDraft(d => ({ ...d, lessons: Number(e.target.value) }))} className={inputCls} />
-                        </Field>
-                        <Field label="Lessons Done">
-                          <input type="number" min={0} value={studentDraft.lessonsDone ?? 0} onChange={e => setStudentDraft(d => ({ ...d, lessonsDone: Number(e.target.value) }))} className={inputCls} />
                         </Field>
                       </div>
                       <Field label="Paid">
