@@ -16,6 +16,7 @@ function Calendar({
   classNames,
   showOutsideDays = true,
   captionLayout = 'label',
+  mode = 'single',
   formatters,
   components,
   disabled,
@@ -36,6 +37,7 @@ function Calendar({
 
   return (
     <DayPicker
+      mode={mode}
       showOutsideDays={showOutsideDays}
       // Combine Weekend and Past Date logic with any passed disabled props
       disabled={[isWeekend, isPast, ...(Array.isArray(disabled) ? disabled : disabled ? [disabled] : [])]}
