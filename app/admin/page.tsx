@@ -424,12 +424,15 @@ export default function AdminBookingPage() {
   // Derived
   // ---------------------------------------------------------------------------
 
-  const vehiclePrice  = (selectedVehicle?.pricePerHour ?? 0) * hours
+  const isLifestyleDriving = selectedVehicle?.code === "LD"
+  const LD_PRICES: Record<number, number> = { 1: 1500, 5: 5500, 10: 9500 }
+  const vehiclePrice  = isLifestyleDriving
+    ? (LD_PRICES[hours] ?? 0)
+    : (selectedVehicle?.pricePerHour ?? 0) * hours
   const addonTotal    = selectedAddons.reduce((s, id) => s + (ADDONS.find(a => a.id === id)?.price ?? 0), 0)
   const grandTotal    = vehiclePrice + addonTotal
-  const isLifestyleDriving = selectedVehicle?.code === "LD"
   const studentValid  = !!student.firstName && !!student.lastName && isValidSAPhone(student.phone)
-  const courseValid   = !!selectedVehicle && (isLifestyleDriving || hours >= MIN_HOURS)
+  const courseValid   = !!selectedVehicle && (isLifestyleDriving ? hours > 0 : hours >= MIN_HOURS)
   const scheduleValid = sessions.length > 0
   const canSubmit     = studentValid && courseValid && scheduleValid && !!paymentMethod && !submitting
   const canShowAutoFill = !!calDate && (isLifestyleDriving || !!selTime) && availableOnDay && !noInstructors && !checkingAvail
@@ -794,7 +797,7 @@ export default function AdminBookingPage() {
                     {INDIVIDUAL_VEHICLES.map(v => (
                       <button
                         key={v.id}
-                        onClick={() => { setSelectedVehicle(v); setCalDate(undefined); setSelTime(""); setSessions([]); setSessionInstructors({}) }}
+                        onClick={() => { setSelectedVehicle(v); setCalDate(undefined); setSelTime(""); setSessions([]); setSessionInstructors({}); if (v.code === "LD") setHours(0) }}
                         className={`flex items-center justify-between px-3 py-2.5 rounded-xl border text-left transition-all ${
                           selectedVehicle?.id === v.id
                             ? "border-indigo-600 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600"
@@ -813,7 +816,7 @@ export default function AdminBookingPage() {
                     {ADVANCE_VEHICLES.map(v => (
                       <button
                         key={v.id}
-                        onClick={() => { setSelectedVehicle(v); setCalDate(undefined); setSelTime(""); setSessions([]); setSessionInstructors({}) }}
+                        onClick={() => { setSelectedVehicle(v); setCalDate(undefined); setSelTime(""); setSessions([]); setSessionInstructors({}); if (v.code === "LD") setHours(0) }}
                         className={`flex items-center justify-between px-3 py-2.5 rounded-xl border text-left transition-all ${
                           selectedVehicle?.id === v.id
                             ? "border-indigo-600 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600"
@@ -829,7 +832,7 @@ export default function AdminBookingPage() {
                   </div>
                 </div>
 
-                {selectedVehicle && (
+                {selectedVehicle && !isLifestyleDriving && (
                   <div className="flex items-center gap-4 pt-2">
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Hours</p>
                     <div className="flex items-center gap-2">
@@ -848,6 +851,50 @@ export default function AdminBookingPage() {
                       <p className="text-[10px] text-slate-400 font-bold uppercase">Session total</p>
                       <p className="text-lg font-black text-indigo-600">R{vehiclePrice.toLocaleString("en-ZA")}</p>
                     </div>
+                  </div>
+                )}
+
+                {isLifestyleDriving && (
+                  <div className="space-y-2 pt-2">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Package</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {([
+                        { days: 1,  label: "1-Day",       price: 1500 },
+                        { days: 5,  label: "5-Day",        price: 5500, badge: "Popular" },
+                        { days: 10, label: "10-Day",       price: 9500, badge: "Best value" },
+                      ] as const).map(pkg => {
+                        const active = hours === pkg.days
+                        return (
+                          <button
+                            key={pkg.days}
+                            onClick={() => { setHours(pkg.days); setSessions([]); setCalDate(undefined); setSessionInstructors({}) }}
+                            className={`relative flex flex-col items-start px-3 py-2.5 rounded-xl border text-left transition-all ${
+                              active
+                                ? "border-indigo-600 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600"
+                                : "border-slate-200 bg-slate-50 text-slate-500 hover:border-indigo-300 hover:text-slate-700"
+                            }`}
+                          >
+                            {"badge" in pkg && (
+                              <span className="absolute -top-2 right-2 text-[8px] font-black uppercase tracking-widest bg-indigo-600 text-white px-1.5 py-0.5 rounded-full">
+                                {pkg.badge}
+                              </span>
+                            )}
+                            <span className="text-[11px] font-black uppercase tracking-widest">{pkg.label}</span>
+                            <span className={`text-[10px] font-black mt-0.5 ${active ? "text-indigo-400" : "text-slate-400"}`}>
+                              R{pkg.price.toLocaleString("en-ZA")}
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                    {hours > 0 && (
+                      <div className="flex justify-end pt-1">
+                        <div className="text-right">
+                          <p className="text-[10px] text-slate-400 font-bold uppercase">Package total</p>
+                          <p className="text-lg font-black text-indigo-600">R{grandTotal.toLocaleString("en-ZA")}</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
