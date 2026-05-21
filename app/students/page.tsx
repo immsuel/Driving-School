@@ -5,7 +5,7 @@ import {
   Search, ChevronRight, X, Loader2, CheckCircle2,
   AlertCircle, User, Phone, Mail, MapPin, Package,
   CalendarDays, Clock, Edit3, Save, Plus, Trash2,
-  ArrowLeft, BookOpen, BadgeCheck, RefreshCw,
+  ArrowLeft, BookOpen, BadgeCheck, RefreshCw, ScrollText,
 } from "lucide-react"
 
 // ---------------------------------------------------------------------------
@@ -439,7 +439,23 @@ export default function StudentsPage() {
                   <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Student Profile</p>
                   <h2 className="text-lg font-black text-slate-800 leading-tight">{selected.firstName} {selected.lastName}</h2>
                 </div>
-                <div className="ml-auto">
+                <div className="ml-auto flex items-center gap-3">
+                  <button
+                    onClick={() => {
+                      const params = new URLSearchParams({
+                        firstName: selected.firstName,
+                        lastName:  selected.lastName,
+                        package:   selected.package,
+                        lessons:   String(selected.lessonsDone),
+                        date:      new Date().toISOString().split("T")[0],
+                      })
+                      window.open(`/api/certificate?${params}`, "_blank")
+                    }}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-black uppercase tracking-widest hover:bg-amber-100 transition-all"
+                  >
+                    <ScrollText className="h-3.5 w-3.5" />
+                    Certificate
+                  </button>
                   <Avatar name={`${selected.firstName} ${selected.lastName}`} size="lg" />
                 </div>
               </div>
