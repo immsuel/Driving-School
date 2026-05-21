@@ -316,14 +316,14 @@ function Section({ title, icon: Icon, children, dim }: {
   return (
     <div className={`rounded-2xl border transition-all ${
       dim
-        ? "border-stone-200 bg-stone-50/60 opacity-40 pointer-events-none select-none"
-        : "border-stone-200 bg-white shadow-sm shadow-stone-100"
+        ? "border-slate-200 bg-slate-50/60 opacity-40 pointer-events-none select-none"
+        : "border-slate-200 bg-white shadow-sm shadow-slate-100"
     }`}>
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-stone-100">
-        <div className="h-7 w-7 rounded-lg bg-stone-100 flex items-center justify-center">
-          <Icon className="h-3.5 w-3.5 text-stone-500" />
+      <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100">
+        <div className="h-7 w-7 rounded-lg bg-indigo-50 flex items-center justify-center">
+          <Icon className="h-3.5 w-3.5 text-indigo-500" />
         </div>
-        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-stone-500">{title}</p>
+        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">{title}</p>
       </div>
       <div className="p-5">{children}</div>
     </div>
@@ -337,7 +337,7 @@ function Section({ title, icon: Icon, children, dim }: {
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400">{label}</p>
+      <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{label}</p>
       {children}
       {error && (
         <p className="text-[10px] text-red-500 font-bold flex items-center gap-1">
@@ -358,7 +358,7 @@ function AdminInput({ value, onChange, placeholder, type = "text", onBlur }: {
       onChange={e => onChange(e.target.value)}
       onBlur={onBlur}
       placeholder={placeholder}
-      className="w-full h-10 px-3 rounded-xl bg-stone-50 border border-stone-200 text-stone-800 text-[13px] font-medium placeholder:text-stone-300 focus:outline-none focus:border-stone-400 focus:ring-2 focus:ring-stone-200 transition-all"
+      className="w-full h-12 px-4 rounded-xl bg-slate-50/50 border border-slate-200 text-slate-900 text-[13px] font-medium placeholder:text-slate-300 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 focus:bg-white transition-all"
     />
   )
 }
@@ -632,24 +632,24 @@ export default function AdminBookingPage() {
 
   if (result) {
     return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
         <div className="max-w-md w-full text-center space-y-8">
-          <div className="h-20 w-20 rounded-full bg-emerald-50 border-2 border-emerald-200 flex items-center justify-center mx-auto">
-            <BadgeCheck className="h-10 w-10 text-emerald-500" />
-          </div>
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-emerald-600 mb-3">Booking confirmed</p>
-            <h2 className="text-3xl font-black uppercase tracking-tight text-stone-800">{result.studentName}</h2>
-            <p className="text-stone-400 text-sm mt-2">has been successfully booked.</p>
-          </div>
-          <div className="p-6 rounded-2xl bg-white border border-stone-200 shadow-sm space-y-1">
-            <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">Reference</p>
-            <p className="text-2xl font-black tracking-widest text-stone-800">{result.ref}</p>
+          <div className="rounded-[3rem] bg-indigo-600 p-12 text-center shadow-2xl shadow-indigo-200">
+            <div className="mx-auto h-20 w-20 bg-white rounded-full flex items-center justify-center mb-8 shadow-xl">
+              <BadgeCheck className="h-10 w-10 text-indigo-600" />
+            </div>
+            <p className="text-[10px] font-black uppercase tracking-[0.25em] text-indigo-200 mb-3">Booking confirmed</p>
+            <h2 className="text-3xl font-black uppercase tracking-tight text-white">{result.studentName}</h2>
+            <p className="text-indigo-100 text-sm mt-2">has been successfully booked.</p>
+            <div className="mt-6 p-4 rounded-2xl bg-white/10 border border-white/20 space-y-1">
+              <p className="text-[10px] font-black uppercase tracking-widest text-indigo-200">Reference</p>
+              <p className="text-2xl font-black tracking-widest text-white">{result.ref}</p>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={resetForm}
-              className="h-12 rounded-xl bg-stone-800 text-white text-[11px] font-black uppercase tracking-widest hover:bg-stone-700 transition-all"
+              className="h-12 rounded-xl bg-indigo-600 text-white text-[11px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all"
             >
               New booking
             </button>
@@ -665,7 +665,7 @@ export default function AdminBookingPage() {
                 grandTotal:         result.grandTotal,
                 assignedInstructor: result.assignedInstructor,
               })}
-              className="h-12 rounded-xl bg-white border border-stone-200 text-stone-600 text-[11px] font-black uppercase tracking-widest hover:bg-stone-50 hover:border-stone-300 transition-all flex items-center justify-center gap-2"
+              className="h-12 rounded-xl bg-white border border-slate-200 text-slate-600 text-[11px] font-black uppercase tracking-widest hover:bg-slate-50 hover:border-slate-300 transition-all flex items-center justify-center gap-2"
             >
               <Receipt className="h-4 w-4" /> Print Receipt
             </button>
@@ -680,24 +680,24 @@ export default function AdminBookingPage() {
   // ---------------------------------------------------------------------------
 
   return (
-    <div className="min-h-screen bg-stone-50 text-stone-800">
+    <div className="min-h-screen bg-slate-50 text-slate-800">
 
       {/* ── Top bar ── */}
-      <div className="sticky top-0 z-30 border-b border-stone-200 bg-white/90 backdrop-blur-sm shadow-sm shadow-stone-100">
+      <div className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur-sm shadow-sm shadow-slate-100">
         <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-7 w-7 rounded-lg bg-stone-800 flex items-center justify-center">
+            <div className="h-7 w-7 rounded-lg bg-indigo-600 flex items-center justify-center">
               <Car className="h-3.5 w-3.5 text-white" />
             </div>
             <div className="flex items-center gap-2">
-              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-stone-700">Dees Driver Training</p>
-              <ChevronRight className="h-3 w-3 text-stone-300" />
-              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-stone-400">Admin — Walk-in Booking</p>
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-700">Dees Driver Training</p>
+              <ChevronRight className="h-3 w-3 text-slate-300" />
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Admin — Walk-in Booking</p>
             </div>
           </div>
           <button
             onClick={resetForm}
-            className="flex items-center gap-2 h-8 px-3 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-500 hover:text-stone-700 text-[10px] font-black uppercase tracking-widest transition-all"
+            className="flex items-center gap-2 h-8 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 text-[10px] font-black uppercase tracking-widest transition-all"
           >
             <RotateCcw className="h-3 w-3" /> Reset
           </button>
@@ -753,11 +753,11 @@ export default function AdminBookingPage() {
                             onClick={() => setStudent(s => ({ ...s, contactMethod: id }))}
                             className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-all ${
                               active
-                                ? "border-stone-700 bg-stone-800 text-white"
-                                : "border-stone-200 bg-stone-50 text-stone-500 hover:border-stone-300 hover:text-stone-700"
+                                ? "border-indigo-600 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600"
+                                : "border-slate-200 bg-slate-50 text-slate-500 hover:border-indigo-300 hover:text-slate-700"
                             }`}
                           >
-                            <Icon className={`h-3.5 w-3.5 shrink-0 ${active ? "text-white" : "text-stone-400"}`} />
+                            <Icon className={`h-3.5 w-3.5 shrink-0 ${active ? "text-indigo-600" : "text-slate-400"}`} />
                             <span className="text-[11px] font-black uppercase tracking-wider">{label}</span>
                           </button>
                         )
@@ -772,7 +772,7 @@ export default function AdminBookingPage() {
             <Section title="Course & Hours" icon={Car} dim={!studentValid}>
               <div className="space-y-4">
                 <div>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-stone-400 mb-2">Individual</p>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Individual</p>
                   <div className="grid grid-cols-2 gap-2 mb-3">
                     {INDIVIDUAL_VEHICLES.map(v => (
                       <button
@@ -780,18 +780,18 @@ export default function AdminBookingPage() {
                         onClick={() => { setSelectedVehicle(v); setCalDate(undefined); setSelTime(""); setSessions([]); setSessionInstructors({}) }}
                         className={`flex items-center justify-between px-3 py-2.5 rounded-xl border text-left transition-all ${
                           selectedVehicle?.id === v.id
-                            ? "border-stone-700 bg-stone-800 text-white"
-                            : "border-stone-200 bg-stone-50 text-stone-500 hover:border-stone-300 hover:text-stone-700"
+                            ? "border-indigo-600 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600"
+                            : "border-slate-200 bg-slate-50 text-slate-500 hover:border-indigo-300 hover:text-slate-700"
                         }`}
                       >
                         <span className="text-[11px] font-black uppercase tracking-widest leading-tight">{v.label}</span>
-                        <span className={`text-[10px] font-black shrink-0 ml-2 ${selectedVehicle?.id === v.id ? "text-stone-300" : "text-stone-400"}`}>
+                        <span className={`text-[10px] font-black shrink-0 ml-2 ${selectedVehicle?.id === v.id ? "text-indigo-400" : "text-slate-400"}`}>
                           R{v.pricePerHour}/h
                         </span>
                       </button>
                     ))}
                   </div>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-stone-400 mb-2">Advanced</p>
+                  <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Advanced</p>
                   <div className="grid grid-cols-2 gap-2">
                     {ADVANCE_VEHICLES.map(v => (
                       <button
@@ -799,12 +799,12 @@ export default function AdminBookingPage() {
                         onClick={() => { setSelectedVehicle(v); setCalDate(undefined); setSelTime(""); setSessions([]); setSessionInstructors({}) }}
                         className={`flex items-center justify-between px-3 py-2.5 rounded-xl border text-left transition-all ${
                           selectedVehicle?.id === v.id
-                            ? "border-stone-700 bg-stone-800 text-white"
-                            : "border-stone-200 bg-stone-50 text-stone-500 hover:border-stone-300 hover:text-stone-700"
+                            ? "border-indigo-600 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600"
+                            : "border-slate-200 bg-slate-50 text-slate-500 hover:border-indigo-300 hover:text-slate-700"
                         }`}
                       >
                         <span className="text-[11px] font-black uppercase tracking-widest leading-tight">{v.label}</span>
-                        <span className={`text-[10px] font-black shrink-0 ml-2 ${selectedVehicle?.id === v.id ? "text-stone-300" : "text-stone-400"}`}>
+                        <span className={`text-[10px] font-black shrink-0 ml-2 ${selectedVehicle?.id === v.id ? "text-indigo-400" : "text-slate-400"}`}>
                           R{v.pricePerHour}/h
                         </span>
                       </button>
@@ -814,22 +814,22 @@ export default function AdminBookingPage() {
 
                 {selectedVehicle && (
                   <div className="flex items-center gap-4 pt-2">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-stone-400">Hours</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Hours</p>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setHours(h => Math.max(MIN_HOURS, h - 1))}
                         disabled={hours <= MIN_HOURS}
-                        className="h-8 w-8 rounded-lg bg-stone-100 border border-stone-200 text-stone-500 flex items-center justify-center hover:border-stone-300 disabled:opacity-30 transition-all font-bold"
+                        className="h-8 w-8 rounded-lg bg-slate-100 border border-slate-200 text-slate-500 flex items-center justify-center hover:border-indigo-300 hover:text-indigo-600 disabled:opacity-30 transition-all font-bold"
                       >−</button>
-                      <span className="w-8 text-center text-lg font-black text-stone-800">{hours}</span>
+                      <span className="w-8 text-center text-lg font-black text-slate-800">{hours}</span>
                       <button
                         onClick={() => setHours(h => h + 1)}
-                        className="h-8 w-8 rounded-lg bg-stone-100 border border-stone-200 text-stone-500 flex items-center justify-center hover:border-stone-300 transition-all font-bold"
+                        className="h-8 w-8 rounded-lg bg-slate-100 border border-slate-200 text-slate-500 flex items-center justify-center hover:border-indigo-300 hover:text-indigo-600 transition-all font-bold"
                       >+</button>
                     </div>
                     <div className="ml-auto text-right">
-                      <p className="text-[10px] text-stone-400 font-bold uppercase">Session total</p>
-                      <p className="text-lg font-black text-stone-800">R{vehiclePrice.toLocaleString("en-ZA")}</p>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase">Session total</p>
+                      <p className="text-lg font-black text-indigo-600">R{vehiclePrice.toLocaleString("en-ZA")}</p>
                     </div>
                   </div>
                 )}
@@ -841,7 +841,7 @@ export default function AdminBookingPage() {
               <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-6">
 
                 <div className="space-y-4">
-                  <div className={`rounded-xl overflow-hidden border border-stone-200 bg-white transition-opacity ${checkingAvail ? "opacity-50 pointer-events-none" : ""}`}>
+                  <div className={`rounded-2xl overflow-hidden border border-slate-200 bg-white transition-opacity ${checkingAvail ? "opacity-50 pointer-events-none" : ""}`}>
                     <Calendar
                       mode="single"
                       selected={calDate}
@@ -852,17 +852,17 @@ export default function AdminBookingPage() {
                   </div>
 
                   {checkingAvail && (
-                    <div className="flex items-center gap-2 text-[11px] text-stone-400 font-bold uppercase">
+                    <div className="flex items-center gap-2 text-[11px] text-indigo-500 font-bold uppercase">
                       <Loader2 className="h-3.5 w-3.5 animate-spin" /> Checking availability…
                     </div>
                   )}
                   {!checkingAvail && calDate && noInstructors && (
-                    <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-500 text-[11px] font-bold uppercase">
+                    <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-[11px] font-bold uppercase">
                       <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" /> No instructors for this course type.
                     </div>
                   )}
                   {!checkingAvail && calDate && !availableOnDay && !noInstructors && (
-                    <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-600 text-[11px] font-bold uppercase">
+                    <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-600 text-[11px] font-bold uppercase">
                       <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" /> No instructors available this day.
                     </div>
                   )}
@@ -871,7 +871,7 @@ export default function AdminBookingPage() {
                 <div className="space-y-4">
                   {!calDate && (
                     <div className="flex items-center gap-3 h-full min-h-[120px]">
-                      <p className="text-[11px] font-bold text-stone-300 uppercase tracking-widest">← Select a date to see time slots</p>
+                      <p className="text-[11px] font-bold text-slate-300 uppercase tracking-widest">← Select a date to see time slots</p>
                     </div>
                   )}
 
@@ -894,10 +894,10 @@ export default function AdminBookingPage() {
                               onClick={() => setSelTime(time)}
                               className={`h-10 rounded-xl border text-[11px] font-black transition-all ${
                                 disabled
-                                  ? "border-stone-100 bg-stone-50 text-stone-300 cursor-not-allowed"
+                                  ? "border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed"
                                   : selTime === time
-                                    ? "border-stone-700 bg-stone-800 text-white shadow-sm"
-                                    : "border-stone-200 bg-white text-stone-600 hover:border-stone-400 hover:text-stone-800"
+                                    ? "border-indigo-600 bg-indigo-600 text-white shadow-sm shadow-indigo-100"
+                                    : "border-slate-200 bg-white text-slate-600 hover:border-indigo-300 hover:text-indigo-600"
                               }`}
                             >
                               {disabled ? "—" : time}
@@ -909,7 +909,7 @@ export default function AdminBookingPage() {
                       {selTime && !autoFillPreview && (
                         <button
                           onClick={addSession}
-                          className="w-full h-10 rounded-xl bg-stone-100 hover:bg-stone-200 border border-stone-200 text-stone-700 text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
+                          className="w-full h-10 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
                         >
                           <PlusCircle className="h-3.5 w-3.5" />
                           Add {fmtDate(calDate)} @ {selTime} ({hours}h)
@@ -917,10 +917,10 @@ export default function AdminBookingPage() {
                       )}
 
                       {selTime && (
-                        <div className="rounded-xl border border-stone-200 bg-stone-50 p-4 space-y-3">
+                        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 space-y-3">
                           <div className="flex items-center gap-2">
-                            <Zap className="h-3.5 w-3.5 text-stone-500" />
-                            <p className="text-[10px] font-black uppercase tracking-widest text-stone-500">Auto-fill recurring slots</p>
+                            <Zap className="h-3.5 w-3.5 text-indigo-400" />
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Auto-fill recurring slots</p>
                           </div>
 
                           <div className="flex gap-2">
@@ -932,8 +932,8 @@ export default function AdminBookingPage() {
                                   onClick={() => setRepeatMode(opt)}
                                   className={`h-8 px-3 rounded-lg border text-[10px] font-black uppercase tracking-widest transition-all ${
                                     repeatMode === opt
-                                      ? "border-stone-700 bg-stone-800 text-white"
-                                      : "border-stone-200 bg-white text-stone-400 hover:border-stone-300 hover:text-stone-600"
+                                      ? "border-indigo-600 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600"
+                                      : "border-slate-200 bg-white text-slate-400 hover:border-indigo-300 hover:text-slate-600"
                                   }`}
                                 >
                                   {labels[opt]}
@@ -946,7 +946,7 @@ export default function AdminBookingPage() {
                             <button
                               onClick={previewAutoFill}
                               disabled={autoFillLoading}
-                              className="w-full h-9 rounded-xl bg-stone-800 hover:bg-stone-700 text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                              className="w-full h-9 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all disabled:opacity-50"
                             >
                               {autoFillLoading
                                 ? <><Loader2 className="h-3.5 w-3.5 animate-spin" />Checking…</>
@@ -966,18 +966,18 @@ export default function AdminBookingPage() {
                                       <div key={i} className={`flex items-center justify-between px-3 py-2 rounded-lg border text-[10px] font-bold uppercase ${
                                         slot.available
                                           ? "bg-emerald-50 border-emerald-200 text-emerald-700"
-                                          : "bg-stone-100 border-stone-200 text-stone-400 line-through"
+                                          : "bg-slate-100 border-slate-200 text-slate-400 line-through"
                                       }`}>
                                         <span>{fmtDate(slot.date)}</span>
                                         <span>{slot.time} · {slot.duration}h</span>
                                         {slot.available
                                           ? <CheckCircle2 className="h-3 w-3 text-emerald-500" />
-                                          : <X className="h-3 w-3 text-stone-400" />}
+                                          : <X className="h-3 w-3 text-slate-400" />}
                                       </div>
                                     ))}
                                   </div>
                                   {autoFillPreview.skipped.length > 0 && (
-                                    <p className="text-[9px] text-stone-400 font-bold uppercase">
+                                    <p className="text-[9px] text-slate-400 font-bold uppercase">
                                       {autoFillPreview.skipped.length} date{autoFillPreview.skipped.length > 1 ? "s" : ""} skipped — no instructor available.
                                     </p>
                                   )}
@@ -991,7 +991,7 @@ export default function AdminBookingPage() {
                                     </button>
                                     <button
                                       onClick={() => { setAutoFillPreview(null); setRepeatMode("none") }}
-                                      className="h-9 w-9 rounded-xl border border-stone-200 bg-white text-stone-400 flex items-center justify-center hover:border-red-200 hover:text-red-400 transition-all"
+                                      className="h-9 w-9 rounded-xl border border-slate-200 bg-white text-slate-400 flex items-center justify-center hover:border-red-200 hover:text-red-400 transition-all"
                                     >
                                       <X className="h-3.5 w-3.5" />
                                     </button>
@@ -1001,7 +1001,7 @@ export default function AdminBookingPage() {
                               <button
                                 onClick={previewAutoFill}
                                 disabled={autoFillLoading}
-                                className="flex items-center gap-1.5 text-[9px] text-stone-400 hover:text-stone-600 font-bold uppercase tracking-wide transition-colors disabled:opacity-50"
+                                className="flex items-center gap-1.5 text-[9px] text-slate-400 hover:text-slate-600 font-bold uppercase tracking-wide transition-colors disabled:opacity-50"
                               >
                                 <RefreshCw className="h-3 w-3" /> Re-check
                               </button>
@@ -1026,18 +1026,18 @@ export default function AdminBookingPage() {
                       onClick={() => setSelectedAddons(prev => on ? prev.filter(id => id !== addon.id) : [...prev, addon.id])}
                       className={`flex items-center justify-between px-4 py-3 rounded-xl border text-left transition-all ${
                         on
-                          ? "border-stone-700 bg-stone-800 text-white"
-                          : "border-stone-200 bg-stone-50 text-stone-500 hover:border-stone-300 hover:text-stone-700"
+                          ? "border-indigo-600 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600"
+                          : "border-slate-200 bg-slate-50 text-slate-500 hover:border-indigo-300 hover:text-slate-700"
                       }`}
                     >
                       <div>
                         <p className="text-[11px] font-black uppercase tracking-widest">{addon.label}</p>
-                        <p className={`text-[10px] font-black mt-0.5 ${on ? "text-stone-300" : "text-stone-400"}`}>R{addon.price}</p>
+                        <p className={`text-[10px] font-black mt-0.5 ${on ? "text-indigo-400" : "text-slate-400"}`}>R{addon.price}</p>
                       </div>
                       <div className={`h-5 w-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                        on ? "bg-white border-white" : "border-stone-300 bg-transparent"
+                        on ? "bg-indigo-600 border-indigo-600" : "border-slate-300 bg-transparent"
                       }`}>
-                        {on && <CheckCircle2 className="h-3 w-3 text-stone-800" />}
+                        {on && <CheckCircle2 className="h-3 w-3 text-white" />}
                       </div>
                     </button>
                   )
@@ -1054,8 +1054,8 @@ export default function AdminBookingPage() {
                     onClick={() => setPaymentMethod(id)}
                     className={`flex flex-col items-center gap-2 py-3 px-2 rounded-xl border transition-all ${
                       paymentMethod === id
-                        ? "border-stone-700 bg-stone-800 text-white"
-                        : "border-stone-200 bg-stone-50 text-stone-500 hover:border-stone-300 hover:text-stone-700"
+                        ? "border-indigo-600 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600"
+                        : "border-slate-200 bg-slate-50 text-slate-500 hover:border-indigo-300 hover:text-slate-700"
                     }`}
                   >
                     <Icon className="h-4 w-4" />
@@ -1082,63 +1082,63 @@ export default function AdminBookingPage() {
             <div className="sticky top-20 space-y-4">
 
               {/* Summary card */}
-              <div className="rounded-2xl border border-stone-200 bg-white shadow-sm overflow-hidden">
-                <div className="px-5 py-4 border-b border-stone-100 bg-stone-50">
-                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-stone-500">Booking Summary</p>
+              <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+                <div className="px-5 py-4 border-b border-slate-100 bg-slate-50">
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">Booking Summary</p>
                 </div>
 
                 <div className="p-5 space-y-5">
 
                   {/* Student */}
                   <div className="space-y-1">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-stone-400">Student</p>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Student</p>
                     {studentValid ? (
                       <div>
-                        <p className="text-sm font-black text-stone-800">{student.firstName} {student.lastName}</p>
-                        <p className="text-[11px] text-stone-400 font-bold">{student.phone}</p>
+                        <p className="text-sm font-black text-slate-800">{student.firstName} {student.lastName}</p>
+                        <p className="text-[11px] text-slate-400 font-bold">{student.phone}</p>
                         {student.contactMethod && (
-                          <p className="text-[10px] text-stone-400 font-bold mt-0.5">
+                          <p className="text-[10px] text-slate-400 font-bold mt-0.5">
                             via {CONTACT_METHODS.find(c => c.id === student.contactMethod)?.label}
                           </p>
                         )}
                       </div>
                     ) : (
-                      <p className="text-[11px] text-stone-300 font-bold uppercase">Not entered</p>
+                      <p className="text-[11px] text-slate-300 font-bold uppercase">Not entered</p>
                     )}
                   </div>
 
                   {/* Course */}
                   <div className="space-y-1">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-stone-400">Course</p>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Course</p>
                     {selectedVehicle ? (
                       <div>
-                        <p className="text-sm font-black text-stone-800">{selectedVehicle.label}</p>
-                        <p className="text-[11px] text-stone-400 font-bold">{hours}h · R{selectedVehicle.pricePerHour}/h</p>
+                        <p className="text-sm font-black text-slate-800">{selectedVehicle.label}</p>
+                        <p className="text-[11px] text-slate-400 font-bold">{hours}h · R{selectedVehicle.pricePerHour}/h</p>
                       </div>
                     ) : (
-                      <p className="text-[11px] text-stone-300 font-bold uppercase">Not selected</p>
+                      <p className="text-[11px] text-slate-300 font-bold uppercase">Not selected</p>
                     )}
                   </div>
 
                   {/* Sessions */}
                   <div className="space-y-2">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-stone-400">
-                      Sessions {sessions.length > 0 && <span className="text-stone-700">{sessions.length}</span>}
+                    <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
+                      Sessions {sessions.length > 0 && <span className="text-slate-700">{sessions.length}</span>}
                     </p>
                     {sessions.length === 0 ? (
-                      <p className="text-[11px] text-stone-300 font-bold uppercase">None added</p>
+                      <p className="text-[11px] text-slate-300 font-bold uppercase">None added</p>
                     ) : (
                       <div className="space-y-1.5">
                         {sessions.map((s, i) => (
                           <div key={i} className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
-                              <div className="h-1.5 w-1.5 rounded-full bg-stone-400 shrink-0" />
-                              <span className="text-[11px] text-stone-600 font-bold">{fmtDate(s.date)}</span>
-                              <span className="text-[10px] text-stone-400 font-bold">{s.time} · {s.duration}h</span>
+                              <div className="h-1.5 w-1.5 rounded-full bg-indigo-400 shrink-0" />
+                              <span className="text-[11px] text-slate-600 font-bold">{fmtDate(s.date)}</span>
+                              <span className="text-[10px] text-slate-400 font-bold">{s.time} · {s.duration}h</span>
                             </div>
                             <button
                               onClick={() => removeSession(i)}
-                              className="h-5 w-5 rounded-md bg-stone-100 flex items-center justify-center text-stone-400 hover:text-red-400 hover:bg-red-50 transition-all"
+                              className="h-5 w-5 rounded-md bg-slate-100 flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-50 transition-all"
                             >
                               <X className="h-3 w-3" />
                             </button>
@@ -1147,7 +1147,7 @@ export default function AdminBookingPage() {
                         {sessions.length > 1 && (
                           <button
                             onClick={() => setSessions([])}
-                            className="text-[9px] text-stone-400 hover:text-red-500 font-bold uppercase tracking-wide transition-colors mt-1"
+                            className="text-[9px] text-slate-400 hover:text-red-500 font-bold uppercase tracking-wide transition-colors mt-1"
                           >
                             Clear all
                           </button>
@@ -1159,11 +1159,11 @@ export default function AdminBookingPage() {
                   {/* Add-ons */}
                   {selectedAddons.length > 0 && (
                     <div className="space-y-1">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-stone-400">Add-ons</p>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Add-ons</p>
                       {selectedAddons.map(id => {
                         const a = ADDONS.find(x => x.id === id)!
                         return (
-                          <div key={id} className="flex justify-between text-[11px] font-bold text-stone-500">
+                          <div key={id} className="flex justify-between text-[11px] font-bold text-slate-500">
                             <span>{a.label}</span><span>R{a.price}</span>
                           </div>
                         )
@@ -1174,31 +1174,31 @@ export default function AdminBookingPage() {
                   {/* Instructor */}
                   {assignedInstructor && (
                     <div className="space-y-1">
-                      <p className="text-[9px] font-black uppercase tracking-widest text-stone-400">Assigned Instructor</p>
-                      <p className="text-[11px] font-bold text-stone-600">{assignedInstructor.firstName} {assignedInstructor.lastName}</p>
-                      <p className="text-[10px] text-stone-400 font-bold">{assignedInstructor.phone}</p>
+                      <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Assigned Instructor</p>
+                      <p className="text-[11px] font-bold text-slate-600">{assignedInstructor.firstName} {assignedInstructor.lastName}</p>
+                      <p className="text-[10px] text-slate-400 font-bold">{assignedInstructor.phone}</p>
                     </div>
                   )}
 
                   {/* Divider + total */}
-                  <div className="border-t border-stone-100 pt-4 space-y-2">
-                    <div className="flex justify-between text-[11px] font-bold text-stone-400 uppercase">
+                  <div className="border-t border-slate-100 pt-4 space-y-2">
+                    <div className="flex justify-between text-[11px] font-bold text-slate-400 uppercase">
                       <span>Session ({hours}h)</span>
                       <span>R{vehiclePrice.toLocaleString("en-ZA")}</span>
                     </div>
                     {selectedAddons.map(id => {
                       const a = ADDONS.find(x => x.id === id)!
                       return (
-                        <div key={id} className="flex justify-between text-[11px] font-bold text-stone-400 uppercase">
+                        <div key={id} className="flex justify-between text-[11px] font-bold text-slate-400 uppercase">
                           <span>{a.label}</span><span>R{a.price}</span>
                         </div>
                       )
                     })}
                     <div className="flex justify-between items-baseline pt-2">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-stone-500">Total</p>
-                      <p className="text-2xl font-black text-stone-800">R{grandTotal.toLocaleString("en-ZA")}</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Total</p>
+                      <p className="text-2xl font-black text-indigo-600">R{grandTotal.toLocaleString("en-ZA")}</p>
                     </div>
-                    <p className="text-[9px] text-stone-400 font-bold uppercase tracking-wide">
+                    <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wide">
                       Payment: {PAYMENT_METHODS.find(m => m.id === paymentMethod)?.label ?? "—"}
                     </p>
                   </div>
@@ -1206,24 +1206,24 @@ export default function AdminBookingPage() {
               </div>
 
               {/* Validation checklist */}
-              <div className="rounded-xl border border-stone-200 bg-white p-4 space-y-2">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-2">
                 {[
                   { ok: studentValid,  label: "Student details" },
                   { ok: courseValid,   label: "Course selected" },
                   { ok: scheduleValid, label: "Session scheduled" },
                 ].map(({ ok, label }) => (
                   <div key={label} className="flex items-center gap-2">
-                    <div className={`h-4 w-4 rounded-full flex items-center justify-center ${ok ? "bg-emerald-100 text-emerald-500" : "bg-stone-100 text-stone-300"}`}>
+                    <div className={`h-4 w-4 rounded-full flex items-center justify-center ${ok ? "bg-indigo-100 text-indigo-500" : "bg-slate-100 text-slate-300"}`}>
                       <CheckCircle2 className="h-2.5 w-2.5" />
                     </div>
-                    <span className={`text-[10px] font-black uppercase tracking-widest ${ok ? "text-stone-600" : "text-stone-300"}`}>{label}</span>
+                    <span className={`text-[10px] font-black uppercase tracking-widest ${ok ? "text-slate-600" : "text-slate-300"}`}>{label}</span>
                   </div>
                 ))}
               </div>
 
               {/* Submit error */}
               {submitError && (
-                <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-200 text-red-500 text-[11px] font-bold uppercase">
+                <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-[11px] font-bold uppercase">
                   <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />{submitError}
                 </div>
               )}
@@ -1232,7 +1232,7 @@ export default function AdminBookingPage() {
               <button
                 onClick={handleSubmit}
                 disabled={!canSubmit}
-                className="w-full h-14 rounded-2xl bg-stone-800 text-white text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-stone-700 transition-all shadow-md shadow-stone-200 disabled:opacity-20 disabled:pointer-events-none"
+                className="w-full h-16 rounded-2xl bg-indigo-600 text-white text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 disabled:opacity-20 disabled:pointer-events-none"
               >
                 {submitting
                   ? <><Loader2 className="h-4 w-4 animate-spin" />Confirming…</>
