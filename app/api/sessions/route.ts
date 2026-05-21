@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 
-const BASE  = process.env.TABLE_BASE_ID!
+const BASE  = process.env.AIRTABLE_BASE_ID!
 const TOKEN = process.env.AIRTABLE_API_KEY!
 const TABLE = process.env.AIRTABLE_SESSIONS_TABLE_ID ?? "Sessions"
 
