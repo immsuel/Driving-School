@@ -54,7 +54,7 @@ const LD_PAYMENT_METHODS = [
     id:          "eft",
     label:       "EFT",
     icon:        Banknote,
-    description: "Direct bank transfer — send proof to 061 271 3583",
+    description: "Direct bank transfer — send proof to 082 440 6585",
   },
   {
     id:          "cash",
@@ -77,8 +77,8 @@ function toDateStr(d: Date): string {
 
 function normaliseSAPhone(raw: string): string | null {
   const digits = raw.replace(/\D/g, "")
-  if (digits.startsWith("27") && digits.length === 11) return digits
-  if (digits.startsWith("0")  && digits.length === 10) return "27" + digits.slice(1)
+  if (digits.startsWith("264") && digits.length === 12) return digits
+  if (digits.startsWith("0")  && digits.length === 10) return "264" + digits.slice(1)
   return null
 }
 
@@ -680,7 +680,7 @@ function ProofScreen({ bookingRef, total, email }: { bookingRef: string; total: 
       </div>
       <div className="p-8 rounded-2xl border-2 border-indigo-200 bg-indigo-50/50 space-y-2">
         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">WhatsApp</p>
-        <p className="text-3xl font-black tracking-tight text-indigo-600">061 271 3583</p>
+        <p className="text-3xl font-black tracking-tight text-indigo-600">082 440 6585</p>
       </div>
       <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Booking Reference</p>
@@ -690,7 +690,7 @@ function ProofScreen({ bookingRef, total, email }: { bookingRef: string; total: 
       <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-100 text-left space-y-2">
         <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">What happens next</p>
         <ul className="text-[11px] text-emerald-800 font-bold uppercase space-y-1.5 leading-relaxed">
-          <li>→ WhatsApp your proof to 061 271 3583</li>
+          <li>→ WhatsApp your proof to 082 440 6585</li>
           <li>→ Include reference <span className="text-emerald-600">{bookingRef}</span></li>
           <li>→ We'll confirm your sessions within 2 business hours</li>
           <li>→ Confirmation will be sent to <span className="text-emerald-600">{email}</span></li>

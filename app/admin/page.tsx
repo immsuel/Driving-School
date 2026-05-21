@@ -68,8 +68,8 @@ function toDateStr(d: Date): string {
 
 function normaliseSAPhone(raw: string): string | null {
   const digits = raw.replace(/\D/g, "")
-  if (digits.startsWith("27") && digits.length === 11) return digits
-  if (digits.startsWith("0")  && digits.length === 10) return "27" + digits.slice(1)
+  if (digits.startsWith("264") && digits.length === 12) return digits
+  if (digits.startsWith("0")  && digits.length === 10) return "264" + digits.slice(1)
   return null
 }
 function isValidSAPhone(raw: string): boolean { return normaliseSAPhone(raw) !== null }

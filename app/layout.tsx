@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
 const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans", weight: ["400", "500", "600", "700"] })
 
 export const metadata: Metadata = {
-  title: 'DriveRight - Modern Driving School',
+  title: 'Dees Driver Training',
   description: 'Learn to drive with confidence. Professional instructors, flexible scheduling, and a 95% first-time pass rate. Book your first lesson today.',
   generator: 'v0.app',
   icons: {
