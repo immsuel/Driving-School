@@ -1,5 +1,6 @@
 "use client"
-
+import { signOut } from "next-auth/react"
+import { useRouter } from "next/navigation"
 import { useState, useEffect, useRef, useCallback } from "react"
 import { Calendar } from "@/components/ui/calendar"
 import {
@@ -716,6 +717,9 @@ export default function AdminBookingPage() {
               <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Admin — Walk-in Booking</p>
             </div>
           </div>
+          <button onClick={() => signOut({ callbackUrl: "/login" })}>
+            Sign out
+          </button>
           <div className="flex items-center gap-2">
             <a
               href="/students"
