@@ -8,7 +8,7 @@ import {
   CreditCard, Banknote, Smartphone, Wallet, X, CalendarDays,
   User, Phone, Mail, MapPin, Car, Clock, ChevronRight,
   RotateCcw, Zap, RefreshCw, Search, BadgeCheck, Receipt, Users,
-  MessageCircle, MessageSquare,
+  MessageCircle, MessageSquare, LogOut,
 } from "lucide-react"
 
 import { getAvailableSlots, getBatchAvailability } from "@/app/actions/instructors"
@@ -320,13 +320,13 @@ function Section({ title, icon: Icon, children, dim }: {
         ? "border-slate-200 bg-slate-50/60 opacity-40 pointer-events-none select-none"
         : "border-slate-200 bg-white shadow-sm shadow-slate-100"
     }`}>
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-slate-100">
-        <div className="h-7 w-7 rounded-lg bg-indigo-50 flex items-center justify-center">
+      <div className="flex items-center gap-3 px-4 sm:px-5 py-4 border-b border-slate-100">
+        <div className="h-7 w-7 rounded-lg bg-indigo-50 flex items-center justify-center shrink-0">
           <Icon className="h-3.5 w-3.5 text-indigo-500" />
         </div>
         <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">{title}</p>
       </div>
-      <div className="p-5">{children}</div>
+      <div className="p-4 sm:p-5">{children}</div>
     </div>
   )
 }
@@ -391,7 +391,6 @@ export default function AdminBookingPage() {
   const [assignedInstructor, setAssignedInstructor] = useState<AssignedInstructor | null>(null)
   const [checkingAvail, setCheckingAvail]     = useState(false)
 
-  // NEW: per-date instructor map so each session carries the right instructor
   const [sessionInstructors, setSessionInstructors] = useState<Record<string, AssignedInstructor>>({})
 
   // ── Auto-fill ──
@@ -462,11 +461,10 @@ export default function AdminBookingPage() {
         setAvailableOnDay(r.availableOnDay)
         setNoInstructors(!r.hasInstructors)
         setAssignedInstructor(r.assignedInstructor)
-        // Store instructor for this date in the per-date map
         if (r.assignedInstructor) {
           setSessionInstructors(prev => ({ ...prev, [toDateStr(calDate)]: r.assignedInstructor! }))
         }
-        // Lifestyle Driving: auto-add date as session immediately (no time picker needed)
+        // LD: session is added via calendar onSelect, not here
         if (selectedVehicle?.code === "LD" && r.availableOnDay && r.hasInstructors) {
           setSessions(prev => {
             const alreadyAdded = prev.some(s => s.date.toDateString() === calDate.toDateString())
@@ -525,7 +523,6 @@ export default function AdminBookingPage() {
       const proposed: typeof autoFillPreview["proposed"] = []
       const skipped: Date[] = []
 
-      // Store instructors for all auto-fill candidate dates
       const newInstructors: Record<string, AssignedInstructor> = {}
       results.forEach((day, i) => {
         if (day.assignedInstructor) {
@@ -591,7 +588,6 @@ export default function AdminBookingPage() {
       paid:          paymentMethod === "cash" ? 1 : 0,
       addons:        selectedAddons,
       grandTotal,
-      // Per-session instructor looked up from the date map
       sessions: sessions.map((s) => {
         const dateStr    = toDateStr(s.date)
         const instructor = sessionInstructors[dateStr]
@@ -654,18 +650,18 @@ export default function AdminBookingPage() {
 
   if (result) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-        <div className="max-w-md w-full text-center space-y-8">
-          <div className="rounded-[3rem] bg-indigo-600 p-12 text-center shadow-2xl shadow-indigo-200">
-            <div className="mx-auto h-20 w-20 bg-white rounded-full flex items-center justify-center mb-8 shadow-xl">
-              <BadgeCheck className="h-10 w-10 text-indigo-600" />
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 sm:p-6">
+        <div className="max-w-md w-full text-center space-y-6 sm:space-y-8">
+          <div className="rounded-[2rem] sm:rounded-[3rem] bg-indigo-600 p-8 sm:p-12 text-center shadow-2xl shadow-indigo-200">
+            <div className="mx-auto h-16 w-16 sm:h-20 sm:w-20 bg-white rounded-full flex items-center justify-center mb-6 sm:mb-8 shadow-xl">
+              <BadgeCheck className="h-8 w-8 sm:h-10 sm:w-10 text-indigo-600" />
             </div>
             <p className="text-[10px] font-black uppercase tracking-[0.25em] text-indigo-200 mb-3">Booking confirmed</p>
-            <h2 className="text-3xl font-black uppercase tracking-tight text-white">{result.studentName}</h2>
+            <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-white">{result.studentName}</h2>
             <p className="text-indigo-100 text-sm mt-2">has been successfully booked.</p>
             <div className="mt-6 p-4 rounded-2xl bg-white/10 border border-white/20 space-y-1">
               <p className="text-[10px] font-black uppercase tracking-widest text-indigo-200">Reference</p>
-              <p className="text-2xl font-black tracking-widest text-white">{result.ref}</p>
+              <p className="text-xl sm:text-2xl font-black tracking-widest text-white">{result.ref}</p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -706,46 +702,67 @@ export default function AdminBookingPage() {
 
       {/* ── Top bar ── */}
       <div className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur-sm shadow-sm shadow-slate-100">
-        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="h-7 w-7 rounded-lg bg-indigo-600 flex items-center justify-center">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 flex items-center justify-between gap-2">
+
+          {/* Left: Brand */}
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="h-7 w-7 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0">
               <Car className="h-3.5 w-3.5 text-white" />
             </div>
-            <div className="flex items-center gap-2">
-              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-700">Dees Driver Training</p>
-              <ChevronRight className="h-3 w-3 text-slate-300" />
-              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">Admin — Walk-in Booking</p>
+            <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+              <p className="text-[11px] font-black uppercase tracking-[0.15em] sm:tracking-[0.2em] text-slate-700 whitespace-nowrap">
+                Dees Driver Training
+              </p>
+              {/* Hide subtitle on smallest screens */}
+              <ChevronRight className="h-3 w-3 text-slate-300 hidden sm:block shrink-0" />
+              <p className="text-[11px] font-black uppercase tracking-[0.2em] text-slate-400 hidden sm:block whitespace-nowrap">
+                Admin — Walk-in Booking
+              </p>
             </div>
           </div>
-          <button onClick={() => signOut({ callbackUrl: "/login" })}>
-            Sign out
-          </button>
-          <div className="flex items-center gap-2">
+
+          {/* Right: Actions */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+            {/* Students link */}
             <a
               href="/students"
-              className="flex items-center gap-2 h-8 px-3 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 hover:text-indigo-700 text-[10px] font-black uppercase tracking-widest transition-all border border-indigo-200"
+              className="flex items-center gap-1.5 h-8 px-2.5 sm:px-3 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 hover:text-indigo-700 text-[10px] font-black uppercase tracking-widest transition-all border border-indigo-200"
             >
-              <Users className="h-3 w-3" /> Students
+              <Users className="h-3 w-3 shrink-0" />
+              <span className="hidden sm:inline">Students</span>
             </a>
+
+            {/* Reset */}
             <button
               onClick={resetForm}
-              className="flex items-center gap-2 h-8 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 text-[10px] font-black uppercase tracking-widest transition-all"
+              className="flex items-center gap-1.5 h-8 px-2.5 sm:px-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 text-[10px] font-black uppercase tracking-widest transition-all"
             >
-              <RotateCcw className="h-3 w-3" /> Reset
+              <RotateCcw className="h-3 w-3 shrink-0" />
+              <span className="hidden sm:inline">Reset</span>
+            </button>
+
+            {/* Sign out — properly styled */}
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="flex items-center gap-1.5 h-8 px-2.5 sm:px-3 rounded-lg bg-slate-100 hover:bg-red-50 border border-transparent hover:border-red-200 text-slate-400 hover:text-red-500 text-[10px] font-black uppercase tracking-widest transition-all"
+            >
+              <LogOut className="h-3 w-3 shrink-0" />
+              <span className="hidden sm:inline">Sign out</span>
             </button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
+        {/* On mobile: single column. On xl: two column sidebar layout */}
+        <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-4 sm:gap-6">
 
           {/* ── LEFT COLUMN ── */}
-          <div className="space-y-5">
+          <div className="space-y-4 sm:space-y-5">
 
             {/* ─── 1. Student details ─── */}
             <Section title="Student Details" icon={User}>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <Field label="First name">
                   <AdminInput value={student.firstName} onChange={v => setStudent(s => ({ ...s, firstName: v }))} placeholder="John" />
                 </Field>
@@ -767,14 +784,14 @@ export default function AdminBookingPage() {
                 <Field label="Email (optional)">
                   <AdminInput type="email" value={student.email} onChange={v => setStudent(s => ({ ...s, email: v }))} placeholder="email@example.com" />
                 </Field>
-                <div className="col-span-2">
+                <div className="col-span-1 sm:col-span-2">
                   <Field label="Pickup address (optional)">
                     <AdminInput value={student.location} onChange={v => setStudent(s => ({ ...s, location: v }))} placeholder="123 Street, Suburb" />
                   </Field>
                 </div>
 
                 {/* ── Preferred contact method ── */}
-                <div className="col-span-2">
+                <div className="col-span-1 sm:col-span-2">
                   <Field label="Preferred method of contact">
                     <div className="grid grid-cols-3 gap-2 mt-1">
                       {CONTACT_METHODS.map(({ id, label, icon: Icon }) => {
@@ -784,7 +801,7 @@ export default function AdminBookingPage() {
                             key={id}
                             type="button"
                             onClick={() => setStudent(s => ({ ...s, contactMethod: id }))}
-                            className={`flex items-center gap-2.5 px-3 py-2.5 rounded-xl border text-left transition-all ${
+                            className={`flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3 py-2.5 rounded-xl border text-left transition-all ${
                               active
                                 ? "border-indigo-600 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600"
                                 : "border-slate-200 bg-slate-50 text-slate-500 hover:border-indigo-300 hover:text-slate-700"
@@ -806,12 +823,12 @@ export default function AdminBookingPage() {
               <div className="space-y-4">
                 <div>
                   <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Individual</p>
-                  <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
                     {INDIVIDUAL_VEHICLES.map(v => (
                       <button
                         key={v.id}
                         onClick={() => { setSelectedVehicle(v); setCalDate(undefined); setSelTime(""); setSessions([]); setSessionInstructors({}); if (v.code === "LD") setHours(0) }}
-                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl border text-left transition-all ${
+                        className={`flex items-center justify-between px-3 py-3 rounded-xl border text-left transition-all ${
                           selectedVehicle?.id === v.id
                             ? "border-indigo-600 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600"
                             : "border-slate-200 bg-slate-50 text-slate-500 hover:border-indigo-300 hover:text-slate-700"
@@ -825,12 +842,12 @@ export default function AdminBookingPage() {
                     ))}
                   </div>
                   <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">Advanced</p>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {ADVANCE_VEHICLES.map(v => (
                       <button
                         key={v.id}
                         onClick={() => { setSelectedVehicle(v); setCalDate(undefined); setSelTime(""); setSessions([]); setSessionInstructors({}); if (v.code === "LD") setHours(0) }}
-                        className={`flex items-center justify-between px-3 py-2.5 rounded-xl border text-left transition-all ${
+                        className={`flex items-center justify-between px-3 py-3 rounded-xl border text-left transition-all ${
                           selectedVehicle?.id === v.id
                             ? "border-indigo-600 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600"
                             : "border-slate-200 bg-slate-50 text-slate-500 hover:border-indigo-300 hover:text-slate-700"
@@ -852,12 +869,12 @@ export default function AdminBookingPage() {
                       <button
                         onClick={() => setHours(h => Math.max(MIN_HOURS, h - 1))}
                         disabled={hours <= MIN_HOURS}
-                        className="h-8 w-8 rounded-lg bg-slate-100 border border-slate-200 text-slate-500 flex items-center justify-center hover:border-indigo-300 hover:text-indigo-600 disabled:opacity-30 transition-all font-bold"
+                        className="h-9 w-9 rounded-lg bg-slate-100 border border-slate-200 text-slate-500 flex items-center justify-center hover:border-indigo-300 hover:text-indigo-600 disabled:opacity-30 transition-all font-bold"
                       >−</button>
                       <span className="w-8 text-center text-lg font-black text-slate-800">{hours}</span>
                       <button
                         onClick={() => setHours(h => h + 1)}
-                        className="h-8 w-8 rounded-lg bg-slate-100 border border-slate-200 text-slate-500 flex items-center justify-center hover:border-indigo-300 hover:text-indigo-600 transition-all font-bold"
+                        className="h-9 w-9 rounded-lg bg-slate-100 border border-slate-200 text-slate-500 flex items-center justify-center hover:border-indigo-300 hover:text-indigo-600 transition-all font-bold"
                       >+</button>
                     </div>
                     <div className="ml-auto text-right">
@@ -872,9 +889,9 @@ export default function AdminBookingPage() {
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Package</p>
                     <div className="grid grid-cols-3 gap-2">
                       {([
-                        { days: 1,  label: "1-Day",       price: 1500 },
-                        { days: 5,  label: "5-Day",        price: 5500, badge: "Popular" },
-                        { days: 10, label: "10-Day",       price: 9500, badge: "Best value" },
+                        { days: 1,  label: "1-Day",  price: 1500 },
+                        { days: 5,  label: "5-Day",  price: 5500, badge: "Popular" },
+                        { days: 10, label: "10-Day", price: 9500, badge: "Best value" },
                       ] as const).map(pkg => {
                         const active = hours === pkg.days
                         return (
@@ -915,18 +932,72 @@ export default function AdminBookingPage() {
 
             {/* ─── 3. Scheduling ─── */}
             <Section title="Schedule Sessions" icon={CalendarDays} dim={!courseValid}>
-              <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-6">
+              {/* Stack calendar and slots vertically on mobile, side-by-side on lg+ */}
+              <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-4 sm:gap-6">
 
-                <div className="space-y-4">
-                  <div className={`rounded-2xl overflow-hidden border border-slate-200 bg-white transition-opacity ${checkingAvail ? "opacity-50 pointer-events-none" : ""}`}>
-                    <Calendar
-                      mode="single"
-                      selected={calDate}
-                      onSelect={d => { if (d) { setCalDate(d); setSelTime("") } }}
-                      disabled={d => d < new Date() || d.getDay() === 0}
-                      className="p-3"
-                    />
+                <div className="space-y-3 sm:space-y-4">
+                  {/* Center calendar on mobile */}
+                  <div className={`rounded-2xl overflow-hidden border border-slate-200 bg-white transition-opacity mx-auto lg:mx-0 w-fit ${checkingAvail ? "opacity-50 pointer-events-none" : ""}`}>
+                    {isLifestyleDriving ? (
+                      <Calendar
+                        mode="multiple"
+                        selected={sessions.map(s => s.date)}
+                        onSelect={(dates) => {
+                          if (!dates) return
+                          // Figure out which date was just toggled
+                          const sessionDates = sessions.map(s => s.date)
+                          // Find newly added date (in dates but not in sessions)
+                          const added = dates.find(d => !sessionDates.some(sd => sd.toDateString() === d.toDateString()))
+                          // Find removed date (in sessions but not in dates)
+                          const removed = sessionDates.find(sd => !dates.some(d => d.toDateString() === sd.toDateString()))
+
+                          if (removed) {
+                            // Deselect: remove from sessions
+                            setSessions(prev => prev.filter(s => s.date.toDateString() !== removed.toDateString()))
+                            return
+                          }
+
+                          if (added) {
+                            // Cap check: don't allow more than the package allows
+                            if (sessions.length >= hours) return
+                            // Trigger availability check for this date
+                            setCalDate(added)
+                            setSelTime("")
+                          }
+                        }}
+                        disabled={d => {
+                          if (d < new Date() || d.getDay() === 0) return true
+                          // Disable unselected dates once cap is reached
+                          const alreadySelected = sessions.some(s => s.date.toDateString() === d.toDateString())
+                          if (!alreadySelected && sessions.length >= hours) return true
+                          return false
+                        }}
+                        className="p-3"
+                      />
+                    ) : (
+                      <Calendar
+                        mode="single"
+                        selected={calDate}
+                        onSelect={d => { if (d) { setCalDate(d); setSelTime("") } }}
+                        disabled={d => d < new Date() || d.getDay() === 0}
+                        className="p-3"
+                      />
+                    )}
                   </div>
+
+                  {/* LD day counter */}
+                  {isLifestyleDriving && hours > 0 && (
+                    <div className="flex items-center justify-between px-1">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
+                        Days selected
+                      </p>
+                      <p className={`text-[11px] font-black uppercase tracking-widest ${
+                        sessions.length >= hours ? "text-indigo-600" : "text-slate-500"
+                      }`}>
+                        {sessions.length} / {hours}
+                      </p>
+                    </div>
+                  )}
 
                   {checkingAvail && (
                     <div className="flex items-center gap-2 text-[11px] text-indigo-500 font-bold uppercase">
@@ -945,29 +1016,39 @@ export default function AdminBookingPage() {
                   )}
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {!calDate && !isLifestyleDriving && (
-                    <div className="flex items-center gap-3 h-full min-h-[120px]">
-                      <p className="text-[11px] font-bold text-slate-300 uppercase tracking-widest">← Select a date to see time slots</p>
+                    <div className="flex items-center gap-3 min-h-[80px] lg:min-h-[120px]">
+                      <p className="text-[11px] font-bold text-slate-300 uppercase tracking-widest">
+                        <span className="lg:hidden">↑ Select a date to see time slots</span>
+                        <span className="hidden lg:inline">← Select a date to see time slots</span>
+                      </p>
                     </div>
                   )}
 
-                  {isLifestyleDriving && !calDate && (
-                    <div className="flex items-center gap-3 h-full min-h-[120px]">
-                      <p className="text-[11px] font-bold text-slate-300 uppercase tracking-widest">← Select a date to add it</p>
+                  {isLifestyleDriving && sessions.length === 0 && (
+                    <div className="flex items-center gap-3 min-h-[80px] lg:min-h-[120px]">
+                      <p className="text-[11px] font-bold text-slate-300 uppercase tracking-widest">
+                        <span className="lg:hidden">↑ Tap dates to add them ({hours} needed)</span>
+                        <span className="hidden lg:inline">← Tap dates to add them ({hours} needed)</span>
+                      </p>
                     </div>
                   )}
 
                   {isLifestyleDriving && calDate && !checkingAvail && availableOnDay && !noInstructors && (
                     <div className="flex items-start gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-[11px] font-bold uppercase">
                       <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                      {fmtDate(calDate)} added — pick more dates or continue.
+                      {sessions.length >= hours
+                        ? `All ${hours} day${hours !== 1 ? "s" : ""} selected — ready to confirm.`
+                        : `${sessions.length} of ${hours} day${hours !== 1 ? "s" : ""} selected — pick ${hours - sessions.length} more.`
+                      }
                     </div>
                   )}
 
                   {!isLifestyleDriving && calDate && !checkingAvail && availableOnDay && !noInstructors && (
                     <>
-                      <div className="grid grid-cols-4 gap-2">
+                      {/* Time slots: 3 cols on mobile, 4 on larger */}
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                         {WORKING_HOURS.map((time, idx) => {
                           const range = WORKING_HOURS.slice(idx, idx + hours)
                           const blockedAirtable   = range.some(t => busySlots.includes(t))
@@ -999,7 +1080,7 @@ export default function AdminBookingPage() {
                       {selTime && !autoFillPreview && (
                         <button
                           onClick={addSession}
-                          className="w-full h-10 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
+                          className="w-full h-11 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
                         >
                           <PlusCircle className="h-3.5 w-3.5" />
                           Add {fmtDate(calDate)} @ {selTime} ({hours}h)
@@ -1007,7 +1088,7 @@ export default function AdminBookingPage() {
                       )}
 
                       {selTime && (
-                        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4 space-y-3">
+                        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-3 sm:p-4 space-y-3">
                           <div className="flex items-center gap-2">
                             <Zap className="h-3.5 w-3.5 text-indigo-400" />
                             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Auto-fill recurring slots</p>
@@ -1020,7 +1101,7 @@ export default function AdminBookingPage() {
                                 <button
                                   key={opt}
                                   onClick={() => setRepeatMode(opt)}
-                                  className={`h-8 px-3 rounded-lg border text-[10px] font-black uppercase tracking-widest transition-all ${
+                                  className={`h-9 px-2.5 sm:px-3 rounded-lg border text-[10px] font-black uppercase tracking-widest transition-all flex-1 sm:flex-none ${
                                     repeatMode === opt
                                       ? "border-indigo-600 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600"
                                       : "border-slate-200 bg-white text-slate-400 hover:border-indigo-300 hover:text-slate-600"
@@ -1107,14 +1188,14 @@ export default function AdminBookingPage() {
 
             {/* ─── 4. Add-ons ─── */}
             <Section title="Add-ons" icon={PlusCircle} dim={!courseValid}>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {ADDONS.map(addon => {
                   const on = selectedAddons.includes(addon.id)
                   return (
                     <button
                       key={addon.id}
                       onClick={() => setSelectedAddons(prev => on ? prev.filter(id => id !== addon.id) : [...prev, addon.id])}
-                      className={`flex items-center justify-between px-4 py-3 rounded-xl border text-left transition-all ${
+                      className={`flex items-center justify-between px-4 py-3.5 rounded-xl border text-left transition-all ${
                         on
                           ? "border-indigo-600 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600"
                           : "border-slate-200 bg-slate-50 text-slate-500 hover:border-indigo-300 hover:text-slate-700"
@@ -1137,12 +1218,12 @@ export default function AdminBookingPage() {
 
             {/* ─── 5. Payment method ─── */}
             <Section title="Payment Method" icon={CreditCard} dim={!courseValid}>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {PAYMENT_METHODS.map(({ id, label, icon: Icon }) => (
                   <button
                     key={id}
                     onClick={() => setPaymentMethod(id)}
-                    className={`flex flex-col items-center gap-2 py-3 px-2 rounded-xl border transition-all ${
+                    className={`flex flex-col items-center gap-2 py-3.5 px-2 rounded-xl border transition-all ${
                       paymentMethod === id
                         ? "border-indigo-600 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600"
                         : "border-slate-200 bg-slate-50 text-slate-500 hover:border-indigo-300 hover:text-slate-700"
@@ -1168,16 +1249,17 @@ export default function AdminBookingPage() {
           </div>
 
           {/* ── RIGHT COLUMN — Summary + submit ── */}
-          <div className="space-y-5">
-            <div className="sticky top-20 space-y-4">
+          {/* On mobile this appears below the form sections; sticky only on xl */}
+          <div className="space-y-4 sm:space-y-5">
+            <div className="xl:sticky xl:top-20 space-y-4">
 
               {/* Summary card */}
               <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-                <div className="px-5 py-4 border-b border-slate-100 bg-slate-50">
+                <div className="px-4 sm:px-5 py-4 border-b border-slate-100 bg-slate-50">
                   <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">Booking Summary</p>
                 </div>
 
-                <div className="p-5 space-y-5">
+                <div className="p-4 sm:p-5 space-y-4 sm:space-y-5">
 
                   {/* Student */}
                   <div className="space-y-1">
@@ -1221,14 +1303,14 @@ export default function AdminBookingPage() {
                       <div className="space-y-1.5">
                         {sessions.map((s, i) => (
                           <div key={i} className="flex items-center justify-between gap-2">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 min-w-0">
                               <div className="h-1.5 w-1.5 rounded-full bg-indigo-400 shrink-0" />
-                              <span className="text-[11px] text-slate-600 font-bold">{fmtDate(s.date)}</span>
-                              <span className="text-[10px] text-slate-400 font-bold">{s.time} · {s.duration}h</span>
+                              <span className="text-[11px] text-slate-600 font-bold truncate">{fmtDate(s.date)}</span>
+                              <span className="text-[10px] text-slate-400 font-bold shrink-0">{s.time} · {s.duration}h</span>
                             </div>
                             <button
                               onClick={() => removeSession(i)}
-                              className="h-5 w-5 rounded-md bg-slate-100 flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-50 transition-all"
+                              className="h-6 w-6 rounded-md bg-slate-100 flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-50 transition-all shrink-0"
                             >
                               <X className="h-3 w-3" />
                             </button>
@@ -1303,7 +1385,7 @@ export default function AdminBookingPage() {
                   { ok: scheduleValid, label: "Session scheduled" },
                 ].map(({ ok, label }) => (
                   <div key={label} className="flex items-center gap-2">
-                    <div className={`h-4 w-4 rounded-full flex items-center justify-center ${ok ? "bg-indigo-100 text-indigo-500" : "bg-slate-100 text-slate-300"}`}>
+                    <div className={`h-4 w-4 rounded-full flex items-center justify-center shrink-0 ${ok ? "bg-indigo-100 text-indigo-500" : "bg-slate-100 text-slate-300"}`}>
                       <CheckCircle2 className="h-2.5 w-2.5" />
                     </div>
                     <span className={`text-[10px] font-black uppercase tracking-widest ${ok ? "text-slate-600" : "text-slate-300"}`}>{label}</span>
@@ -1322,7 +1404,7 @@ export default function AdminBookingPage() {
               <button
                 onClick={handleSubmit}
                 disabled={!canSubmit}
-                className="w-full h-16 rounded-2xl bg-indigo-600 text-white text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 disabled:opacity-20 disabled:pointer-events-none"
+                className="w-full h-14 sm:h-16 rounded-2xl bg-indigo-600 text-white text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-100 disabled:opacity-20 disabled:pointer-events-none"
               >
                 {submitting
                   ? <><Loader2 className="h-4 w-4 animate-spin" />Confirming…</>

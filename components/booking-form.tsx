@@ -105,10 +105,6 @@ function generateRef(): string {
   return `DR-LD-${Math.random().toString(36).substring(2, 7).toUpperCase()}`
 }
 
-/**
- * Returns every weekday (Mon–Sat) date string in a given year/month
- * that falls on or after `earliest`.
- */
 function weekdaysInMonth(year: number, month: number, earliest: Date): string[] {
   const result: string[] = []
   const daysInMonth = new Date(year, month + 1, 0).getDate()
@@ -116,7 +112,7 @@ function weekdaysInMonth(year: number, month: number, earliest: Date): string[] 
     const d = new Date(year, month, day)
     d.setHours(0, 0, 0, 0)
     if (d < earliest) continue
-    if (d.getDay() === 0) continue // Sunday already blocked by calendar
+    if (d.getDay() === 0) continue
     result.push(toDateStr(d))
   }
   return result
@@ -371,7 +367,6 @@ function DaySelectionStep({
   selectedDays:           Date[]
   onToggle:               (d: Date) => void
   onDeselect:             (d: Date) => void
-  // NEW: called whenever availability resolves — passes back a map of date → instructor
   onInstructorsResolved:  (map: Record<string, AssignedInstructor>) => void
 }) {
   const earliest = minBookableDate()
@@ -383,9 +378,9 @@ function DaySelectionStep({
     return d
   })
 
-  const [unavailableDates, setUnavailableDates]         = useState<Set<string>>(new Set())
+  const [unavailableDates, setUnavailableDates]           = useState<Set<string>>(new Set())
   const [isLoadingAvailability, setIsLoadingAvailability] = useState(false)
-  const [availabilityError, setAvailabilityError]       = useState(false)
+  const [availabilityError, setAvailabilityError]         = useState(false)
 
   const fetchController = useRef<AbortController | null>(null)
 
@@ -405,7 +400,6 @@ function DaySelectionStep({
         if (controller.signal.aborted) return
 
         const blocked = new Set<string>()
-        // NEW: build a date → instructor map from this batch
         const instructorMap: Record<string, AssignedInstructor> = {}
 
         results.forEach((r) => {
@@ -418,10 +412,8 @@ function DaySelectionStep({
         })
 
         setUnavailableDates(blocked)
-        // Bubble the instructor map up to the parent so it can be used at submit time
         onInstructorsResolved(instructorMap)
 
-        // Deselect any days that just became unavailable
         selectedDays.forEach((d) => {
           if (blocked.has(toDateStr(d))) onDeselect(d)
         })
@@ -443,7 +435,7 @@ function DaySelectionStep({
   const isUnavailable = (d: Date) => unavailableDates.has(toDateStr(d))
 
   return (
-    <div className="space-y-6 lg:space-y-10 animate-in fade-in slide-in-from-bottom-4">
+    <div className="space-y-6 lg:space-y-8 animate-in fade-in slide-in-from-bottom-4">
       <SectionHeader
         step={2}
         title="Select your days"
@@ -463,94 +455,103 @@ function DaySelectionStep({
         </p>
       </div>
 
-      {/* Calendar */}
-      <div className="relative">
-        {isLoadingAvailability && (
-          <div className="absolute inset-0 z-10 rounded-2xl bg-white/70 flex items-center justify-center gap-2 backdrop-blur-[1px]">
-            <Loader2 className="h-5 w-5 animate-spin text-indigo-500" />
-            <p className="text-[11px] font-bold text-indigo-600 uppercase tracking-wide">
-              Checking availability…
-            </p>
-          </div>
-        )}
+      {/* Calendar — two-column on desktop: calendar left, chips + status right */}
+      <div className="flex flex-col lg:flex-row lg:items-start gap-6">
 
-        <div className={`bg-white p-4 border border-slate-100 rounded-2xl shadow-inner flex justify-center transition-opacity ${isLoadingAvailability ? "opacity-40 pointer-events-none" : ""}`}>
-          <Calendar
-            mode="multiple"
-            selected={selectedDays}
-            onSelect={(days) => {
-              if (!days) return
-              const added   = days.find((d) => !selectedDays.some((s) => s.toDateString() === d.toDateString()))
-              const removed = selectedDays.find((s) => !days.some((d) => d.toDateString() === s.toDateString()))
-              if (added)   onToggle(added)
-              if (removed) onToggle(removed)
-            }}
-            onMonthChange={(month) => {
-              const d = new Date(month)
-              d.setDate(1)
-              d.setHours(0, 0, 0, 0)
-              setCalMonth(d)
-            }}
-            disabled={(date) => {
-              const d = new Date(date)
-              d.setHours(0, 0, 0, 0)
-              if (d < earliest)    return true
-              if (d.getDay() === 0) return true
-              if (isUnavailable(d)) return true
-              if (!selectedDays.some((s) => s.toDateString() === d.toDateString()) && selectedDays.length >= pkg.days) return true
-              return false
-            }}
-            className="rounded-md border-none"
-          />
+        {/* Calendar */}
+        <div className="relative shrink-0">
+          {isLoadingAvailability && (
+            <div className="absolute inset-0 z-10 rounded-2xl bg-white/70 flex items-center justify-center gap-2 backdrop-blur-[1px]">
+              <Loader2 className="h-4 w-4 animate-spin text-indigo-500" />
+              <p className="text-[10px] font-bold text-indigo-600 uppercase tracking-wide">
+                Checking…
+              </p>
+            </div>
+          )}
+          <div className={`transition-opacity ${isLoadingAvailability ? "opacity-40 pointer-events-none" : ""}`}>
+            <Calendar
+              mode="multiple"
+              selected={selectedDays}
+              onSelect={(days) => {
+                if (!days) return
+                const added   = days.find((d) => !selectedDays.some((s) => s.toDateString() === d.toDateString()))
+                const removed = selectedDays.find((s) => !days.some((d) => d.toDateString() === s.toDateString()))
+                if (added)   onToggle(added)
+                if (removed) onToggle(removed)
+              }}
+              onMonthChange={(month) => {
+                const d = new Date(month)
+                d.setDate(1)
+                d.setHours(0, 0, 0, 0)
+                setCalMonth(d)
+              }}
+              disabled={(date) => {
+                const d = new Date(date)
+                d.setHours(0, 0, 0, 0)
+                if (d < earliest)    return true
+                if (d.getDay() === 0) return true
+                if (isUnavailable(d)) return true
+                if (!selectedDays.some((s) => s.toDateString() === d.toDateString()) && selectedDays.length >= pkg.days) return true
+                return false
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Right panel: chips + status */}
+        <div className="flex-1 space-y-4 lg:pt-2">
+          {availabilityError && (
+            <StatusBanner variant="warning">
+              Couldn't load availability — please try again or contact us directly.
+            </StatusBanner>
+          )}
+
+          {/* Selected day chips */}
+          {selectedDays.length > 0 ? (
+            <div className="flex flex-wrap gap-2 animate-in fade-in">
+              {[...selectedDays]
+                .sort((a, b) => a.getTime() - b.getTime())
+                .map((d) => (
+                  <div
+                    key={d.toISOString()}
+                    className="flex items-center gap-1.5 rounded-full bg-indigo-50 border border-indigo-100 pl-3 pr-1.5 py-1"
+                  >
+                    <span className="text-[10px] font-black text-indigo-700 uppercase">
+                      {formatShortDate(d)}
+                    </span>
+                    <button
+                      onClick={() => onToggle(d)}
+                      className="h-4 w-4 rounded-full bg-indigo-200 text-indigo-600 flex items-center justify-center hover:bg-red-200 hover:text-red-600 transition-colors"
+                      aria-label={`Remove ${formatShortDate(d)}`}
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </button>
+                  </div>
+                ))}
+            </div>
+          ) : (
+            <p className="text-[11px] font-bold text-slate-300 uppercase tracking-widest">
+              No days selected yet
+            </p>
+          )}
+
+          {/* Status message */}
+          {done ? (
+            <StatusBanner variant="success">
+              All {pkg.days} {pkg.days === 1 ? "day" : "days"} selected — tap Continue.
+            </StatusBanner>
+          ) : selectedDays.length > 0 ? (
+            <StatusBanner variant="neutral">
+              {selectedDays.length} of {pkg.days} selected — pick {remaining} more.
+            </StatusBanner>
+          ) : (
+            <StatusBanner variant="neutral">
+              Tap dates on the calendar to select your {pkg.days} training {pkg.days === 1 ? "day" : "days"}.
+              Greyed-out dates have no instructor available.
+            </StatusBanner>
+          )}
         </div>
       </div>
-
-      {availabilityError && (
-        <StatusBanner variant="warning">
-          Couldn't load availability — please try again or contact us directly.
-        </StatusBanner>
-      )}
-
-      {/* Selected day chips */}
-      {selectedDays.length > 0 && (
-        <div className="flex flex-wrap gap-2 animate-in fade-in">
-          {[...selectedDays]
-            .sort((a, b) => a.getTime() - b.getTime())
-            .map((d) => (
-              <div
-                key={d.toISOString()}
-                className="flex items-center gap-1.5 rounded-full bg-indigo-50 border border-indigo-100 pl-3 pr-1.5 py-1"
-              >
-                <span className="text-[10px] font-black text-indigo-700 uppercase">
-                  {formatShortDate(d)}
-                </span>
-                <button
-                  onClick={() => onToggle(d)}
-                  className="h-4 w-4 rounded-full bg-indigo-200 text-indigo-600 flex items-center justify-center hover:bg-red-200 hover:text-red-600 transition-colors"
-                  aria-label={`Remove ${formatShortDate(d)}`}
-                >
-                  <X className="h-2.5 w-2.5" />
-                </button>
-              </div>
-            ))}
-        </div>
-      )}
-
-      {/* Status message */}
-      {done ? (
-        <StatusBanner variant="success">
-          All {pkg.days} {pkg.days === 1 ? "day" : "days"} selected — tap Continue.
-        </StatusBanner>
-      ) : selectedDays.length > 0 ? (
-        <StatusBanner variant="neutral">
-          {selectedDays.length} of {pkg.days} selected — pick {remaining} more.
-        </StatusBanner>
-      ) : (
-        <StatusBanner variant="neutral">
-          Tap dates on the calendar to select your {pkg.days} training {pkg.days === 1 ? "day" : "days"}.
-          Greyed-out dates have no instructor available.
-        </StatusBanner>
-      )}
     </div>
   )
 }
@@ -751,7 +752,6 @@ export default function LifestyleBookingForm() {
   const [popiaConsent, setPopiaConsent]   = useState(false)
   const [selectedPkg, setSelectedPkg]     = useState<LDPackage | null>(null)
   const [selectedDays, setSelectedDays]   = useState<Date[]>([])
-  // NEW: stores the assigned instructor for each available date returned by getBatchAvailability
   const [sessionInstructors, setSessionInstructors] = useState<Record<string, AssignedInstructor>>({})
   const [formData, setFormData]           = useState<FormData>({
     firstName: "", lastName: "", email: "", phone: "", location: "",
@@ -764,8 +764,6 @@ export default function LifestyleBookingForm() {
   const [bookingRef, setBookingRef]       = useState("")
 
   const total = selectedPkg ? `R${selectedPkg.price.toLocaleString("en-ZA")}` : "R0"
-
-  // ── Day toggle ──────────────────────────────────────────────────────────────
 
   const toggleDay = (d: Date) => {
     setSelectedDays((prev) => {
@@ -780,18 +778,14 @@ export default function LifestyleBookingForm() {
     setSelectedDays((prev) => prev.filter((s) => s.toDateString() !== d.toDateString()))
   }
 
-  // NEW: merge incoming instructor map with any already stored (covers multi-month browsing)
   const handleInstructorsResolved = (map: Record<string, AssignedInstructor>) => {
     setSessionInstructors((prev) => ({ ...prev, ...map }))
   }
 
-  // Reset selections and cached instructor data when package changes
   useEffect(() => {
     setSelectedDays([])
     setSessionInstructors({})
   }, [selectedPkg?.id])
-
-  // ── Validation ──────────────────────────────────────────────────────────────
 
   const handlePhoneBlur = () => {
     if (formData.phone && !isValidSAPhone(formData.phone))
@@ -811,8 +805,6 @@ export default function LifestyleBookingForm() {
     if (step === 4) return !!paymentMethod
     return true
   }
-
-  // ── Submission ──────────────────────────────────────────────────────────────
 
   const handleSubmit = async (method: string) => {
     if (!selectedPkg) return
@@ -834,7 +826,6 @@ export default function LifestyleBookingForm() {
       pickupAddress: formData.location,
       paymentMethod: method,
       paid:          isCash ? 1 : 0,
-      // NEW: per-session instructor fields — looked up from the map captured during day selection
       sessions: sortedDays.map((d) => {
         const dateStr    = toDateStr(d)
         const instructor = sessionInstructors[dateStr]
@@ -876,8 +867,6 @@ export default function LifestyleBookingForm() {
     else setStep((s) => s + 1)
   }
 
-  // ── Guards ──────────────────────────────────────────────────────────────────
-
   if (submitted) return (
     <SuccessScreen
       bookingRef={bookingRef} total={total}
@@ -892,8 +881,6 @@ export default function LifestyleBookingForm() {
       </div>
     </div>
   )
-
-  // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
     <div className="flex flex-col gap-10">
