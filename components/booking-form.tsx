@@ -692,7 +692,13 @@ function ProofScreen({ bookingRef, total, email }: { bookingRef: string; total: 
         <div className="h-px bg-indigo-100" />
         <div className="space-y-1">
           <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">WhatsApp Proof to</p>
-          <p className="text-2xl font-black tracking-tight text-indigo-600">082 440 6585</p>
+          
+            <button
+              onClick={() => window.open("https://wa.me/27824406585", "_blank")}
+              className="text-2xl font-black tracking-tight text-indigo-600 underline underline-offset-4 hover:text-indigo-800 transition-colors"
+            >
+              082 440 6585
+            </button>
         </div>
       </div>
       <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
