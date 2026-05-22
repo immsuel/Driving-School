@@ -679,9 +679,21 @@ function ProofScreen({ bookingRef, total, email }: { bookingRef: string; total: 
           <span className="font-black text-slate-900">{total}</span>, WhatsApp your proof to:
         </p>
       </div>
-      <div className="p-8 rounded-2xl border-2 border-indigo-200 bg-indigo-50/50 space-y-2">
-        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">WhatsApp</p>
-        <p className="text-3xl font-black tracking-tight text-indigo-600">082 440 6585</p>
+      <div className="p-8 rounded-2xl border-2 border-indigo-200 bg-indigo-50/50 space-y-4">
+        <div className="space-y-1">
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Bank</p>
+          <p className="text-2xl font-black tracking-tight text-indigo-600">Standard Bank</p>
+        </div>
+        <div className="h-px bg-indigo-100" />
+        <div className="space-y-1">
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Account Number</p>
+          <p className="text-2xl font-black tracking-tight text-indigo-600">251113183</p>
+        </div>
+        <div className="h-px bg-indigo-100" />
+        <div className="space-y-1">
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">WhatsApp Proof to</p>
+          <p className="text-2xl font-black tracking-tight text-indigo-600">082 440 6585</p>
+        </div>
       </div>
       <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Booking Reference</p>
