@@ -29,22 +29,6 @@ export default function BookingPage() {
         </section>
 
         {/* Success Metrics: The Trust Strip */}
-        <section className="border-y border-slate-100 bg-slate-50/50 py-20">
-          <div className="mx-auto grid max-w-6xl grid-cols-1 gap-16 px-6 md:grid-cols-3">
-            {[
-              { label: "Fleet Total", val: "200+", sub: "Licensed Graduates" },
-              { label: "Success Rate", val: "95%", sub: "First-Time Pass Ratio" },
-              { label: "Academy Rating", val: "4.9/5", sub: "Average Student Review" },
-            ].map((stat) => (
-              <div key={stat.label} className="group relative flex flex-col items-center text-center sm:items-start sm:text-left">
-                <div className="absolute -left-4 top-0 hidden h-full w-1 bg-indigo-600/10 transition-colors group-hover:bg-indigo-600 sm:block" />
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-3 group-hover:text-indigo-600 transition-colors">{stat.label}</p>
-                <p className="text-5xl font-[950] tracking-tighter text-slate-900">{stat.val}</p>
-                <p className="text-[11px] font-bold uppercase text-slate-500 mt-2 tracking-widest">{stat.sub}</p>
-              </div>
-            ))}
-          </div>
-        </section>
 
       </main>
     </div>
