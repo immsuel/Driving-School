@@ -1,6 +1,4 @@
 import type { Metadata } from "next"
-import { Navbar } from "@/components/navbar"
-import { Footer } from "@/components/footer"
 import BookingForm from "@/components/booking-form"
 import { Shield, Clock, Star, MapPin } from "lucide-react"
 
@@ -19,7 +17,6 @@ const highlights = [
 export default function BookingPage() {
   return (
     <div className="flex min-h-screen flex-col bg-white">
-      <Navbar />
       <main className="flex-1">
         
         {/* Header Section: Minimal & Prestigious */}
@@ -50,7 +47,6 @@ export default function BookingPage() {
         </section>
 
       </main>
-      <Footer />
     </div>
   )
 }
