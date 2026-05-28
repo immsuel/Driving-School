@@ -119,22 +119,10 @@ async function fetchBusySlotsForInstructor(
   instructorName: string
 ): Promise<string[]> {
   const cleanName = instructorName.replace(/[^\x20-\x7E]/g, "").trim()
-  
-  console.log("🔍 all sessions test:")
-const testUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${SESSIONS_TABLE}?maxRecords=5`
-const testRes = await fetch(testUrl, {
-  headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` },
-  cache: "no-store",
-})
-const testData = await testRes.json()
-console.log("🔍 raw sessions:", JSON.stringify(testData))
 
-  const formula = encodeURIComponent(
-    `AND({Date}="${dateStr}",{Instructor Name}="${cleanName}")`
-  )
-  const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${SESSIONS_TABLE}?filterByFormula=${formula}`
-
-  console.log("🔍 busySlots query:", { dateStr, cleanName, url: decodeURIComponent(url) })
+  // Fetch all sessions and filter in code — Airtable formula filtering
+  // is unreliable when fields are linked records or formula fields
+  const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${SESSIONS_TABLE}`
 
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` },
@@ -143,21 +131,22 @@ console.log("🔍 raw sessions:", JSON.stringify(testData))
   if (!res.ok) return []
 
   const data = await res.json()
-  console.log("🔍 busySlots response:", JSON.stringify(data))
-
   const busy = new Set<string>()
 
   for (const record of data.records ?? []) {
+    const recDate       = String(record.fields["Date"]            ?? "")
+    const recInstructor = String(record.fields["Instructor Name"] ?? "").replace(/[^\x20-\x7E]/g, "").trim()
+    
+    if (recDate !== dateStr || recInstructor !== cleanName) continue
+
     const startTime   = String(record.fields["Time"]     ?? "")
     const durationRaw = String(record.fields["Duration"] ?? "1h")
     const hours       = parseInt(durationRaw.replace(/\D/g, ""), 10) || 1
-    const startIndex = WORKING_HOURS.indexOf(startTime as typeof WORKING_HOURS[number])
-    console.log("🔍 slot:", { startTime, durationRaw, hours, startIndex })
+    const startIndex  = WORKING_HOURS.indexOf(startTime as typeof WORKING_HOURS[number])
     if (startIndex === -1) continue
     WORKING_HOURS.slice(startIndex, startIndex + hours).forEach((s) => busy.add(s))
   }
 
-  console.log("🔍 final busySlots:", Array.from(busy))
   return Array.from(busy)
 }
 
