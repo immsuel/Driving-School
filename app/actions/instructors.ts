@@ -81,7 +81,7 @@ async function hasAnySessionOnDate(
 
 async function fetchInstructors(licenseType: string): Promise<Instructor[]> {
   const formula = encodeURIComponent(
-    `AND({Active}="checked", FIND("${licenseType}", ARRAYJOIN({License Types},","))>0)`
+    `AND({Active}=TRUE(), FIND("${licenseType}", {License Types})>0)`
   )
   const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${INSTRUCTORS_TABLE}?filterByFormula=${formula}`
 
@@ -96,19 +96,21 @@ async function fetchInstructors(licenseType: string): Promise<Instructor[]> {
   const data = await res.json()
   console.log("🔍 Airtable response:", JSON.stringify(data, null, 2))
   return (data.records ?? []).map((r: any) => {
-    const firstName = r.fields["First Name"] ?? ""
-    const lastName  = r.fields["Last Name"]  ?? ""
-    return {
-      id:           r.id,
-      name:         `${firstName} ${lastName}`.trim(),
-      firstName,
-      lastName,
-      phone:        String(r.fields["Phone"] ?? ""),
-      email:        r.fields["Email"] ?? "",
-      licenseTypes: r.fields["License Types"] ?? [],
-      workingDays:  r.fields["Working Days"]  ?? [],
-    }
-  })
+  // Handle BOM on First Name
+  const firstNameKey = Object.keys(r.fields).find(k => k.includes("First Name")) ?? "First Name"
+  const firstName = r.fields[firstNameKey] ?? ""
+  const lastName  = r.fields["Last Name"]  ?? ""
+  return {
+    id:           r.id,
+    name:         `${firstName} ${lastName}`.trim(),
+    firstName,
+    lastName,
+    phone:        String(r.fields["Phone"] ?? ""),
+    email:        r.fields["Email"] ?? "",
+    licenseTypes: r.fields["License Types"] ?? [],
+    workingDays:  r.fields["Working Days"]  ?? [],
+  }
+})
 }
 
 async function fetchBusySlotsForInstructor(
