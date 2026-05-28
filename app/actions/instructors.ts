@@ -68,7 +68,7 @@ async function hasAnySessionOnDate(
   const formula = encodeURIComponent(
     `AND({Date}="${dateStr}",{Instructor Name}="${cleanName}")`
   )
-  const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${SESSIONS_TABLE}?filterByFormula=${formula}`
+  const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${SESSIONS_TABLE}?filterByFormula=${formula}&fields%5B%5D=Date`
 
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` },
@@ -119,7 +119,7 @@ async function fetchBusySlotsForInstructor(
   instructorName: string
 ): Promise<string[]> {
   const cleanName = instructorName.replace(/[^\x20-\x7E]/g, "").trim()
-
+  
   console.log("🔍 all sessions test:")
 const testUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${SESSIONS_TABLE}?maxRecords=5`
 const testRes = await fetch(testUrl, {
@@ -132,7 +132,7 @@ console.log("🔍 raw sessions:", JSON.stringify(testData))
   const formula = encodeURIComponent(
     `AND({Date}="${dateStr}",{Instructor Name}="${cleanName}")`
   )
-  const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${SESSIONS_TABLE}?filterByFormula=${formula}&fields%5B%5D=Time&fields%5B%5D=Duration`
+  const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${SESSIONS_TABLE}?filterByFormula=${formula}`
 
   console.log("🔍 busySlots query:", { dateStr, cleanName, url: decodeURIComponent(url) })
 
