@@ -64,8 +64,9 @@ async function hasAnySessionOnDate(
   dateStr: string,
   instructorName: string
 ): Promise<boolean> {
+  const cleanName = instructorName.replace(/[^\x20-\x7E]/g, "").trim()
   const formula = encodeURIComponent(
-    `AND({Date}="${dateStr}",{Instructor Name}="${instructorName}")`
+    `AND({Date}="${dateStr}",{Instructor Name}="${cleanName}")`
   )
   const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${SESSIONS_TABLE}?filterByFormula=${formula}&fields%5B%5D=Date`
 
@@ -117,8 +118,10 @@ async function fetchBusySlotsForInstructor(
   dateStr: string,
   instructorName: string
 ): Promise<string[]> {
+  const cleanName = instructorName.replace(/[^\x20-\x7E]/g, "").trim()
+  
   const formula = encodeURIComponent(
-    `AND({Date}="${dateStr}",{Instructor Name}="${instructorName}")`
+    `AND({Date}="${dateStr}",{Instructor Name}="${cleanName}")`
   )
   const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${SESSIONS_TABLE}?filterByFormula=${formula}&fields%5B%5D=Time&fields%5B%5D=Duration`
 
