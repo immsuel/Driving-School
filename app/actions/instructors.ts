@@ -125,24 +125,30 @@ async function fetchBusySlotsForInstructor(
   )
   const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${SESSIONS_TABLE}?filterByFormula=${formula}&fields%5B%5D=Time&fields%5B%5D=Duration`
 
+  console.log("🔍 busySlots query:", { dateStr, cleanName, url: decodeURIComponent(url) })
+
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` },
     cache: "no-store",
   })
   if (!res.ok) return []
 
-  const data  = await res.json()
-  const busy  = new Set<string>()
+  const data = await res.json()
+  console.log("🔍 busySlots response:", JSON.stringify(data))
+
+  const busy = new Set<string>()
 
   for (const record of data.records ?? []) {
     const startTime   = String(record.fields["Time"]     ?? "")
     const durationRaw = String(record.fields["Duration"] ?? "1h")
     const hours       = parseInt(durationRaw.replace(/\D/g, ""), 10) || 1
-    const startIndex  = WORKING_HOURS.indexOf(startTime)
+    const startIndex = WORKING_HOURS.indexOf(startTime as typeof WORKING_HOURS[number])
+    console.log("🔍 slot:", { startTime, durationRaw, hours, startIndex })
     if (startIndex === -1) continue
     WORKING_HOURS.slice(startIndex, startIndex + hours).forEach((s) => busy.add(s))
   }
 
+  console.log("🔍 final busySlots:", Array.from(busy))
   return Array.from(busy)
 }
 
