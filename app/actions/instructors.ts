@@ -81,20 +81,17 @@ async function hasAnySessionOnDate(
 
 async function fetchInstructors(licenseType: string): Promise<Instructor[]> {
   const formula = encodeURIComponent(
-    `AND({Active}="checked", FIND("${licenseType}", ARRAYJOIN({License Types},","))>0)`
+    `AND({Active}=TRUE(), FIND("${licenseType}", ARRAYJOIN({License Types},","))>0)`
   )
   const url = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${INSTRUCTORS_TABLE}?filterByFormula=${formula}`
-
-  console.log("🔍 fetchInstructors URL:", url)
-  console.log("🔍 licenseType:", licenseType)
 
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` },
     cache: "no-store",
   })
-  
+  if (!res.ok) return []
+
   const data = await res.json()
-  console.log("🔍 Airtable response:", JSON.stringify(data, null, 2))
   return (data.records ?? []).map((r: any) => {
     const firstName = r.fields["First Name"] ?? ""
     const lastName  = r.fields["Last Name"]  ?? ""
