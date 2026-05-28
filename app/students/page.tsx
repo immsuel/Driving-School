@@ -84,34 +84,36 @@ const api = {
 
 function mapStudent(r: { id: string; fields: Record<string, unknown> }): Student {
   const f = r.fields
+  const firstNameKey = Object.keys(f).find(k => k.includes("First Name")) ?? "First Name"
   return {
     id: r.id,
-    firstName:       String(f["First Name"]      ?? ""),
-    lastName:        String(f["Last Name"]        ?? ""),
-    email:           String(f["Email"]            ?? ""),
-    phone:           String(f["Phone"]            ?? ""),
-    pickupAddress:   String(f["Pickup Address"]   ?? ""),
-    package:         String(f["Package"]          ?? ""),
+    firstName:       String(f[firstNameKey]        ?? ""),
+    lastName:        String(f["Last Name"]          ?? ""),
+    email:           String(f["Email"]              ?? ""),
+    phone:           String(f["Phone"]              ?? ""),
+    pickupAddress:   String(f["Pickup Address"]     ?? ""),
+    package:         String(f["Package"]            ?? ""),
     paid:            f["Paid"] === "checked" || f["Paid"] === true,
-    lessons:         Number(f["Lessons"]          ?? 0),
-    lessonsDone:     Number(f["Lessons Done"]     ?? 0),
-    instructorPhone: String(f["Instructor Phone"] ?? ""),
-    sessionIds:      (f["Sessions"] as string[])  ?? [],
+    lessons:         Number(f["Lessons"]            ?? 0),
+    lessonsDone:     Number(f["Lessons Done"]       ?? 0),
+    instructorPhone: String(f["Instructor Phone"]   ?? ""),
+    sessionIds:      (f["Sessions"] as string[])    ?? [],
   }
 }
 
 function mapSession(r: { id: string; fields: Record<string, unknown> }): Session {
   const f = r.fields
+  const studentNameKey = Object.keys(f).find(k => k.includes("Student Name")) ?? "Student Name"
   return {
     id: r.id,
-    studentName:     String(f["Student Name"]     ?? ""),
-    date:            String(f["Date"]             ?? ""),
-    time:            String(f["Time"]             ?? ""),
-    duration:        String(f["Duration"]         ?? ""),
-    formattedSlot:   String(f["Formatted Slot"]   ?? ""),
-    phone:           String(f["Phone"]            ?? ""),
-    instructorName:  String(f["Instructor Name"]  ?? ""),
-    instructorPhone: String(f["Instructor Phone"] ?? ""),
+    studentName:     String(f[studentNameKey]       ?? ""),
+    date:            String(f["Date"]               ?? ""),
+    time:            String(f["Time"]               ?? ""),
+    duration:        String(f["Duration"]           ?? ""),
+    formattedSlot:   String(f["Formatted Slot"]     ?? ""),
+    phone:           String(f["Phone"]              ?? ""),
+    instructorName:  String(f["Instructor Name"]    ?? ""),
+    instructorPhone: String(f["Instructor Phone"]   ?? ""),
     confirmed:       f["Confirmed"] === "checked" || f["Confirmed"] === true,
   }
 }
