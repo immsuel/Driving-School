@@ -120,6 +120,15 @@ async function fetchBusySlotsForInstructor(
 ): Promise<string[]> {
   const cleanName = instructorName.replace(/[^\x20-\x7E]/g, "").trim()
   
+  console.log("🔍 all sessions test:")
+const testUrl = `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/${SESSIONS_TABLE}?maxRecords=5`
+const testRes = await fetch(testUrl, {
+  headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` },
+  cache: "no-store",
+})
+const testData = await testRes.json()
+console.log("🔍 raw sessions:", JSON.stringify(testData))
+
   const formula = encodeURIComponent(
     `AND({Date}="${dateStr}",{Instructor Name}="${cleanName}")`
   )
