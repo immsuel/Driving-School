@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   const firstName    = sp.get("firstName")    ?? ""
   const lastName     = sp.get("lastName")     ?? ""
   const idNumber     = sp.get("idNumber")     ?? sp.get("phone") ?? "000000 0000 000"
-  const vehicleType  = sp.get("vehicleType")  ?? "LIGHT MOTOR VEHICLE"
+  const vehicleType  = sp.get("vehicleType")  ?? "Lifestyle Driving Light Motor Vehicle"
   const categoryCode = sp.get("categoryCode") ?? "08 (B) Auto"
   const certNumber   = sp.get("certNumber")   ?? "—"
   const director     = sp.get("director")     ?? "N PILLAY"
@@ -296,7 +296,6 @@ export async function GET(req: NextRequest) {
         <div class="cert-intro">This is to certify that</div>
 
         <div class="cert-name">${esc(fullName)}</div>
-        <div class="cert-id">${esc(idNumber)}</div>
 
         <div class="cert-body">
           Has been assessed on a<br/>
