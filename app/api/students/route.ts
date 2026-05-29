@@ -50,3 +50,21 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: String(e) }, { status: 500 })
   }
 }
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url)
+    const id = searchParams.get("id")
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 })
+
+    const res = await fetch(`https://api.airtable.com/v0/${BASE}/${TABLE}/${id}`, {
+      method: "DELETE",
+      headers: headers(),
+    })
+    const data = await res.json()
+    if (!res.ok) return NextResponse.json(data, { status: res.status })
+    return NextResponse.json(data)
+  } catch (e) {
+    return NextResponse.json({ error: String(e) }, { status: 500 })
+  }
+}
