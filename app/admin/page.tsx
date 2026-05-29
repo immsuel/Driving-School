@@ -247,7 +247,7 @@ function triggerPrint(params: {
     <div class="field"><label>Full Name</label><span>${student.firstName} ${student.lastName}</span></div>
     <div class="field"><label>Cell Number</label><span>${student.phone}</span></div>
     ${student.email ? `<div class="field"><label>Email</label><span>${student.email}</span></div>` : ""}
-    ${student.location ? `<div class="field"><label>Pickup Address</label><span>${student.location}</span></div>` : ""}
+    ${student.location ? `<div class="field"><label>Address</label><span>${student.location}</span></div>` : ""}
     <div class="field"><label>Preferred Contact</label><span>${contactLabel}</span></div>
   </div>
 </div>
