@@ -424,6 +424,11 @@ export default function AdminBookingPage() {
   // ---------------------------------------------------------------------------
 
   const isLifestyleDriving = selectedVehicle?.code === "LD"
+
+  // For LD: each session is 1 hour; "hours" state holds the number of sessions in the package
+  // The session duration is always 1 for LD
+  const LD_SESSION_DURATION = 1
+
   const LD_PRICES: Record<number, number> = { 1: 1500, 5: 5500, 10: 9500 }
   const vehiclePrice  = isLifestyleDriving
     ? (LD_PRICES[hours] ?? 0)
@@ -434,7 +439,10 @@ export default function AdminBookingPage() {
   const courseValid   = !!selectedVehicle && (isLifestyleDriving ? hours > 0 : hours >= MIN_HOURS)
   const scheduleValid = sessions.length > 0
   const canSubmit     = studentValid && courseValid && scheduleValid && !!paymentMethod && !submitting
-  const canShowAutoFill = !!calDate && (isLifestyleDriving || !!selTime) && availableOnDay && !noInstructors && !checkingAvail
+  const canShowAutoFill = !!calDate && !!selTime && availableOnDay && !noInstructors && !checkingAvail
+
+  // The duration to use when booking a slot (1h for LD, normal hours otherwise)
+  const sessionDuration = isLifestyleDriving ? LD_SESSION_DURATION : hours
 
   // ---------------------------------------------------------------------------
   // Availability
@@ -463,14 +471,6 @@ export default function AdminBookingPage() {
         if (r.assignedInstructor) {
           setSessionInstructors(prev => ({ ...prev, [toDateStr(calDate)]: r.assignedInstructor! }))
         }
-        // LD: session is added via calendar onSelect, not here
-        if (selectedVehicle?.code === "LD" && r.availableOnDay && r.hasInstructors) {
-          setSessions(prev => {
-            const alreadyAdded = prev.some(s => s.date.toDateString() === calDate.toDateString())
-            if (alreadyAdded) return prev
-            return [...prev, { date: calDate, time: "08:00", duration: 10 }]
-          })
-        }
       })
       .catch(() => { if (!ctrl.signal.aborted) console.error("Avail check failed") })
       .finally(() => { if (!ctrl.signal.aborted) setCheckingAvail(false) })
@@ -485,22 +485,21 @@ export default function AdminBookingPage() {
   // ---------------------------------------------------------------------------
 
   const addSession = () => {
-    if (!calDate) return
-    if (isLifestyleDriving) {
-      const alreadyAdded = sessions.some(s => s.date.toDateString() === calDate.toDateString())
-      if (alreadyAdded) return
-      setSessions(prev => [...prev, { date: calDate, time: "08:00", duration: 10 }])
-      setCalDate(undefined)
-      return
-    }
-    if (!selTime) return
-    const range = getBlockedSlots(selTime, hours)
+    if (!calDate || !selTime) return
+    const range = getBlockedSlots(selTime, sessionDuration)
     const overlap = sessions.some(s =>
       s.date.toDateString() === calDate.toDateString() &&
       getBlockedSlots(s.time, s.duration).some(t => range.includes(t))
     )
     if (overlap) { alert("This slot overlaps an existing session."); return }
-    setSessions(prev => [...prev, { date: calDate, time: selTime, duration: hours }])
+
+    // For LD, cap at the package size
+    if (isLifestyleDriving && sessions.length >= hours) {
+      alert(`This package includes ${hours} session${hours !== 1 ? "s" : ""}. Remove one to add another.`)
+      return
+    }
+
+    setSessions(prev => [...prev, { date: calDate, time: selTime, duration: sessionDuration }])
     setSelTime("")
   }
 
@@ -534,12 +533,12 @@ export default function AdminBookingPage() {
         if (proposed.filter(p => p.available).length >= 3) break
         const day = results[i]
         if (!day.availableOnDay || !day.hasInstructors) { skipped.push(candidates[i]); continue }
-        const range = getBlockedSlots(selTime, hours)
+        const range = getBlockedSlots(selTime, sessionDuration)
         const blocked = range.some(t => day.busySlots.includes(t)) ||
           sessions.some(s => s.date.toDateString() === candidates[i].toDateString() &&
             getBlockedSlots(s.time, s.duration).some(t => range.includes(t)))
-        if (blocked) { skipped.push(candidates[i]); proposed.push({ date: candidates[i], time: selTime, duration: hours, available: false }) }
-        else proposed.push({ date: candidates[i], time: selTime, duration: hours, available: true })
+        if (blocked) { skipped.push(candidates[i]); proposed.push({ date: candidates[i], time: selTime, duration: sessionDuration, available: false }) }
+        else proposed.push({ date: candidates[i], time: selTime, duration: sessionDuration, available: true })
       }
 
       setAutoFillPreview({
@@ -549,16 +548,16 @@ export default function AdminBookingPage() {
       })
     } catch { console.error("Auto-fill failed") }
     finally { setAutoFillLoading(false) }
-  }, [calDate, selTime, selectedVehicle, repeatMode, hours, sessions])
+  }, [calDate, selTime, selectedVehicle, repeatMode, sessionDuration, sessions])
 
   const commitAutoFill = () => {
     if (!autoFillPreview || !calDate || !selTime) return
-    const range = getBlockedSlots(selTime, hours)
+    const range = getBlockedSlots(selTime, sessionDuration)
     const anchorOverlap = sessions.some(s =>
       s.date.toDateString() === calDate.toDateString() &&
       getBlockedSlots(s.time, s.duration).some(t => range.includes(t))
     )
-    if (!anchorOverlap) setSessions(prev => [...prev, { date: calDate, time: selTime, duration: hours }])
+    if (!anchorOverlap) setSessions(prev => [...prev, { date: calDate, time: selTime, duration: sessionDuration }])
     setSessions(prev => [...prev, ...autoFillPreview.proposed.filter(p => p.available)])
     setAutoFillPreview(null); setRepeatMode("none"); setSelTime(""); setCalDate(undefined)
   }
@@ -826,7 +825,7 @@ export default function AdminBookingPage() {
                     {INDIVIDUAL_VEHICLES.map(v => (
                       <button
                         key={v.id}
-                        onClick={() => { setSelectedVehicle(v); setCalDate(undefined); setSelTime(""); setSessions([]); setSessionInstructors({}); if (v.code === "LD") setHours(0) }}
+                        onClick={() => { setSelectedVehicle(v); setCalDate(undefined); setSelTime(""); setSessions([]); setSessionInstructors({}) }}
                         className={`flex items-center justify-between px-3 py-3 rounded-xl border text-left transition-all ${
                           selectedVehicle?.id === v.id
                             ? "border-indigo-600 bg-indigo-50 text-indigo-700 ring-1 ring-indigo-600"
@@ -888,9 +887,9 @@ export default function AdminBookingPage() {
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Package</p>
                     <div className="grid grid-cols-3 gap-2">
                       {([
-                        { days: 1,  label: "1-Day",  price: 1500 },
-                        { days: 5,  label: "5-Day",  price: 5500, badge: "Popular" },
-                        { days: 10, label: "10-Day", price: 9500, badge: "Best value" },
+                        { days: 1,  label: "1-Session",  price: 1500 },
+                        { days: 5,  label: "5-Sessions",  price: 5500, badge: "Popular" },
+                        { days: 10, label: "10-Sessions", price: 9500, badge: "Best value" },
                       ] as const).map(pkg => {
                         const active = hours === pkg.days
                         return (
@@ -935,60 +934,11 @@ export default function AdminBookingPage() {
               <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-4 sm:gap-6">
 
                 <div className="space-y-3 sm:space-y-4">
-                  {/* Center calendar on mobile */}
-                  <div className={`rounded-2xl overflow-hidden border border-slate-200 bg-white transition-opacity mx-auto lg:mx-0 w-fit ${checkingAvail ? "opacity-50 pointer-events-none" : ""}`}>
-                    {isLifestyleDriving ? (
-                      <Calendar
-                        mode="multiple"
-                        selected={sessions.map(s => s.date)}
-                        onSelect={(dates) => {
-                          if (!dates) return
-                          // Figure out which date was just toggled
-                          const sessionDates = sessions.map(s => s.date)
-                          // Find newly added date (in dates but not in sessions)
-                          const added = dates.find(d => !sessionDates.some(sd => sd.toDateString() === d.toDateString()))
-                          // Find removed date (in sessions but not in dates)
-                          const removed = sessionDates.find(sd => !dates.some(d => d.toDateString() === sd.toDateString()))
-
-                          if (removed) {
-                            // Deselect: remove from sessions
-                            setSessions(prev => prev.filter(s => s.date.toDateString() !== removed.toDateString()))
-                            return
-                          }
-
-                          if (added) {
-                            // Cap check: don't allow more than the package allows
-                            if (sessions.length >= hours) return
-                            // Trigger availability check for this date
-                            setCalDate(added)
-                            setSelTime("")
-                          }
-                        }}
-                        disabled={d => {
-                          if (d < new Date() || d.getDay() === 0) return true
-                          // Disable unselected dates once cap is reached
-                          const alreadySelected = sessions.some(s => s.date.toDateString() === d.toDateString())
-                          if (!alreadySelected && sessions.length >= hours) return true
-                          return false
-                        }}
-                        className="p-3"
-                      />
-                    ) : (
-                      <Calendar
-                        mode="single"
-                        selected={calDate}
-                        onSelect={d => { if (d) { setCalDate(d); setSelTime("") } }}
-                        disabled={d => d < new Date() || d.getDay() === 0}
-                        className="p-3"
-                      />
-                    )}
-                  </div>
-
-                  {/* LD day counter */}
+                  {/* LD session counter */}
                   {isLifestyleDriving && hours > 0 && (
                     <div className="flex items-center justify-between px-1">
                       <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                        Days selected
+                        Sessions booked
                       </p>
                       <p className={`text-[11px] font-black uppercase tracking-widest ${
                         sessions.length >= hours ? "text-indigo-600" : "text-slate-500"
@@ -997,6 +947,17 @@ export default function AdminBookingPage() {
                       </p>
                     </div>
                   )}
+
+                  {/* Center calendar on mobile */}
+                  <div className={`rounded-2xl overflow-hidden border border-slate-200 bg-white transition-opacity mx-auto lg:mx-0 w-fit ${checkingAvail ? "opacity-50 pointer-events-none" : ""}`}>
+                    <Calendar
+                      mode="single"
+                      selected={calDate}
+                      onSelect={d => { if (d) { setCalDate(d); setSelTime("") } }}
+                      disabled={d => d < new Date() || d.getDay() === 0}
+                      className="p-3"
+                    />
+                  </div>
 
                   {checkingAvail && (
                     <div className="flex items-center gap-2 text-[11px] text-indigo-500 font-bold uppercase">
@@ -1016,7 +977,7 @@ export default function AdminBookingPage() {
                 </div>
 
                 <div className="space-y-3 sm:space-y-4">
-                  {!calDate && !isLifestyleDriving && (
+                  {!calDate && (
                     <div className="flex items-center gap-3 min-h-[80px] lg:min-h-[120px]">
                       <p className="text-[11px] font-bold text-slate-300 uppercase tracking-widest">
                         <span className="lg:hidden">↑ Select a date to see time slots</span>
@@ -1025,37 +986,18 @@ export default function AdminBookingPage() {
                     </div>
                   )}
 
-                  {isLifestyleDriving && sessions.length === 0 && (
-                    <div className="flex items-center gap-3 min-h-[80px] lg:min-h-[120px]">
-                      <p className="text-[11px] font-bold text-slate-300 uppercase tracking-widest">
-                        <span className="lg:hidden">↑ Tap dates to add them ({hours} needed)</span>
-                        <span className="hidden lg:inline">← Tap dates to add them ({hours} needed)</span>
-                      </p>
-                    </div>
-                  )}
-
-                  {isLifestyleDriving && calDate && !checkingAvail && availableOnDay && !noInstructors && (
-                    <div className="flex items-start gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 text-[11px] font-bold uppercase">
-                      <CheckCircle2 className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                      {sessions.length >= hours
-                        ? `All ${hours} day${hours !== 1 ? "s" : ""} selected — ready to confirm.`
-                        : `${sessions.length} of ${hours} day${hours !== 1 ? "s" : ""} selected — pick ${hours - sessions.length} more.`
-                      }
-                    </div>
-                  )}
-
-                  {!isLifestyleDriving && calDate && !checkingAvail && availableOnDay && !noInstructors && (
+                  {calDate && !checkingAvail && availableOnDay && !noInstructors && (
                     <>
                       {/* Time slots: 3 cols on mobile, 4 on larger */}
                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                         {WORKING_HOURS.map((time, idx) => {
-                          const range = WORKING_HOURS.slice(idx, idx + hours)
+                          const range = WORKING_HOURS.slice(idx, idx + sessionDuration)
                           const blockedAirtable   = range.some(t => busySlots.includes(t))
                           const blockedItinerary  = sessions.some(s =>
                             s.date.toDateString() === calDate.toDateString() &&
                             getBlockedSlots(s.time, s.duration).some(t => range.includes(t))
                           )
-                          const outOfBounds = range.length < hours
+                          const outOfBounds = range.length < sessionDuration
                           const disabled = blockedAirtable || blockedItinerary || outOfBounds
                           return (
                             <button
@@ -1082,7 +1024,10 @@ export default function AdminBookingPage() {
                           className="w-full h-11 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
                         >
                           <PlusCircle className="h-3.5 w-3.5" />
-                          Add {fmtDate(calDate)} @ {selTime} ({hours}h)
+                          Add {fmtDate(calDate)} @ {selTime} ({sessionDuration}h)
+                          {isLifestyleDriving && hours > 0 && (
+                            <span className="text-indigo-400 text-[10px]">· {sessions.length + 1}/{hours}</span>
+                          )}
                         </button>
                       )}
 
@@ -1284,7 +1229,10 @@ export default function AdminBookingPage() {
                     {selectedVehicle ? (
                       <div>
                         <p className="text-sm font-black text-slate-800">{selectedVehicle.label}</p>
-                        <p className="text-[11px] text-slate-400 font-bold">{hours}h · R{selectedVehicle.pricePerHour}/h</p>
+                        {isLifestyleDriving
+                          ? <p className="text-[11px] text-slate-400 font-bold">{hours} session{hours !== 1 ? "s" : ""} · R{selectedVehicle.pricePerHour}/session</p>
+                          : <p className="text-[11px] text-slate-400 font-bold">{hours}h · R{selectedVehicle.pricePerHour}/h</p>
+                        }
                       </div>
                     ) : (
                       <p className="text-[11px] text-slate-300 font-bold uppercase">Not selected</p>
@@ -1294,7 +1242,7 @@ export default function AdminBookingPage() {
                   {/* Sessions */}
                   <div className="space-y-2">
                     <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
-                      Sessions {sessions.length > 0 && <span className="text-slate-700">{sessions.length}</span>}
+                      Sessions {sessions.length > 0 && <span className="text-slate-700">{sessions.length}{isLifestyleDriving && hours > 0 ? `/${hours}` : ""}</span>}
                     </p>
                     {sessions.length === 0 ? (
                       <p className="text-[11px] text-slate-300 font-bold uppercase">None added</p>
@@ -1354,7 +1302,7 @@ export default function AdminBookingPage() {
                   {/* Divider + total */}
                   <div className="border-t border-slate-100 pt-4 space-y-2">
                     <div className="flex justify-between text-[11px] font-bold text-slate-400 uppercase">
-                      <span>Session ({hours}h)</span>
+                      <span>{isLifestyleDriving ? `${hours} session${hours !== 1 ? "s" : ""}` : `Session (${hours}h)`}</span>
                       <span>R{vehiclePrice.toLocaleString("en-ZA")}</span>
                     </div>
                     {selectedAddons.map(id => {
