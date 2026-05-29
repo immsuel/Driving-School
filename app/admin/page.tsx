@@ -30,7 +30,7 @@ const INDIVIDUAL_VEHICLES = [
 ]
 
 const ADVANCE_VEHICLES = [
-  { id: "lifestyle",   label: "Lifestyle Driving",              code: "LD", pricePerHour: 1500 },
+  { id: "lifestyle",   label: "Lifestyle Driving",              code: "LD", pricePerHour: 300 },
   { id: "closed-body", label: "Heavy — Closed Body",            code: "CB", pricePerHour: 520 },
   { id: "superlink",   label: "Combination — Super Link",       code: "SL", pricePerHour: 680 },
   { id: "forklift",    label: "Forklift Renewal (On Site)",     code: "FK", pricePerHour: 450 },
@@ -429,7 +429,7 @@ export default function AdminBookingPage() {
   // The session duration is always 1 for LD
   const LD_SESSION_DURATION = 1
 
-  const LD_PRICES: Record<number, number> = { 1: 1500, 5: 5500, 10: 9500 }
+  const LD_PRICES: Record<number, number> = { 1: 300, 5: 1500, 10: 3000 }
   const vehiclePrice  = isLifestyleDriving
     ? (LD_PRICES[hours] ?? 0)
     : (selectedVehicle?.pricePerHour ?? 0) * hours
@@ -884,9 +884,9 @@ export default function AdminBookingPage() {
                     <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Package</p>
                     <div className="grid grid-cols-3 gap-2">
                       {([
-                        { days: 1,  label: "1-Session",  price: 1500 },
-                        { days: 5,  label: "5-Sessions",  price: 5500, badge: "Popular" },
-                        { days: 10, label: "10-Sessions", price: 9500, badge: "Best value" },
+                        { days: 1,  label: "1-Session",  price: 300 },
+                        { days: 5,  label: "5-Sessions",  price: 1500, badge: "Popular" },
+                        { days: 10, label: "10-Sessions", price: 3000, badge: "Best value" },
                       ] as const).map(pkg => {
                         const active = hours === pkg.days
                         return (
