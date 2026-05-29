@@ -52,8 +52,8 @@ const PAYMENT_METHODS = [
 
 const CONTACT_METHODS = [
   { id: "whatsapp", label: "WhatsApp", icon: MessageCircle },
-  { id: "sms",      label: "SMS",      icon: MessageSquare },
-  { id: "email",    label: "Email",    icon: Mail },
+  {/*{ id: "sms",      label: "SMS",      icon: MessageSquare },
+  { id: "email",    label: "Email",    icon: Mail },*/}
 ]
 
 const MIN_HOURS = 2
