@@ -45,10 +45,9 @@ const ADDONS = [
 ]
 
 const PAYMENT_METHODS = [
-  { id: "cash",    label: "Cash",     icon: Smartphone },
-  { id: "eft",     label: "EFT",      icon: Banknote },
-  { id: "ewallet", label: "E-Wallet", icon: Wallet },
-  { id: "card",    label: "Card",     icon: CreditCard },
+  { id: "cash",       label: "Cash",       icon: Banknote },
+  { id: "cash-later", label: "Cash Later", icon: Wallet },
+  { id: "eft",        label: "EFT",        icon: Smartphone },
 ]
 
 const CONTACT_METHODS = [
@@ -1234,12 +1233,12 @@ export default function AdminBookingPage() {
                   </button>
                 ))}
               </div>
-              {paymentMethod === "cash" && (
-                <p className="mt-3 text-[10px] text-emerald-600 font-bold uppercase tracking-wide">
-                  ✓ Cash due on first session — booking confirmed immediately.
+              {paymentMethod === "cash-later" && (
+                <p className="mt-3 text-[10px] text-amber-600 font-bold uppercase tracking-wide">
+                  Payment to be collected before session begins.
                 </p>
               )}
-              {paymentMethod !== "cash" && (
+              {paymentMethod === "eft" && (
                 <p className="mt-3 text-[10px] text-amber-600 font-bold uppercase tracking-wide">
                   Proof of payment required before session is confirmed.
                 </p>
