@@ -291,7 +291,7 @@ ${assignedInstructor ? `
 </div>
 
 <div class="footer">
-  <span>Dees Driver Training · Windhoek</span>
+  <span>Dees Driver Training · Durban</span>
   <span>Printed ${new Date().toLocaleString("en-ZA")}</span>
   <span>Ref: ${ref}</span>
 </div>
