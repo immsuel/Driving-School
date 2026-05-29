@@ -123,7 +123,7 @@ function mapSession(r: { id: string; fields: Record<string, unknown> }): Session
 // ---------------------------------------------------------------------------
 
 const inputCls =
-  "w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-50 transition-all"
+  "w-full px-3 py-2 rounded-xl bg-slate-50 border border-slate-200 text-sm font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:border-red-300 focus:ring-2 focus:ring-red-50 transition-all"
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -156,7 +156,7 @@ function Avatar({ name, size = "md" }: { name: string; size?: "sm" | "md" | "lg"
   const initials = name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase()
   const sz = { sm: "h-8 w-8 text-xs", md: "h-10 w-10 text-sm", lg: "h-14 w-14 text-base" }
   const palette = [
-    "bg-indigo-100 text-indigo-600", "bg-emerald-100 text-emerald-600",
+    "bg-red-100 text-red-600", "bg-emerald-100 text-emerald-600",
     "bg-amber-100 text-amber-700",   "bg-rose-100 text-rose-600",
     "bg-violet-100 text-violet-600", "bg-cyan-100 text-cyan-700",
   ]
@@ -173,7 +173,7 @@ function ProgressBar({ done, total }: { done: number; total: number }) {
   return (
     <div className="flex items-center gap-2">
       <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-        <div className="h-full rounded-full bg-indigo-400 transition-all duration-500" style={{ width: `${pct}%` }} />
+        <div className="h-full rounded-full bg-red-400 transition-all duration-500" style={{ width: `${pct}%` }} />
       </div>
       <span className="text-[10px] font-black text-slate-400 tabular-nums">{done}/{total}</span>
     </div>
@@ -364,7 +364,7 @@ export default function StudentsPage() {
         <div className="flex items-center gap-3">
           <button
             onClick={goBack}
-            className="h-8 w-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm"
+            className="h-8 w-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-red-600 hover:border-red-200 transition-all shadow-sm"
           >
             <ArrowLeft className="h-4 w-4" />
           </button>
@@ -409,7 +409,7 @@ export default function StudentsPage() {
                 if (editStudent) { setEditStudent(false); setStudentDraft({}) }
                 else { setEditStudent(true); setStudentDraft({ ...selected }) }
               }}
-              className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 transition-colors"
+              className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-red-600 transition-colors"
             >
               {editStudent ? <X className="h-3.5 w-3.5" /> : <Edit3 className="h-3.5 w-3.5" />}
               {editStudent ? "Cancel" : "Edit"}
@@ -466,7 +466,7 @@ export default function StudentsPage() {
                 <button
                   onClick={saveStudent}
                   disabled={saving}
-                  className="w-full h-10 rounded-xl bg-indigo-600 text-white text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all disabled:opacity-50"
+                  className="w-full h-10 rounded-xl bg-red-600 text-white text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-red-700 transition-all disabled:opacity-50"
                 >
                   {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                   {saving ? "Saving…" : "Save Changes"}
@@ -497,12 +497,12 @@ export default function StudentsPage() {
               <CalendarDays className="h-3.5 w-3.5" />
               Sessions
               {sessions.length > 0 && (
-                <span className="bg-indigo-100 text-indigo-600 rounded-md px-1.5 py-0.5 text-[9px] font-black">{sessions.length}</span>
+                <span className="bg-red-100 text-red-600 rounded-md px-1.5 py-0.5 text-[9px] font-black">{sessions.length}</span>
               )}
             </p>
             <button
               onClick={() => { setAddingSession(v => !v); setNewSession({}) }}
-              className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 transition-colors"
+              className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-red-600 transition-colors"
             >
               {addingSession ? <X className="h-3.5 w-3.5" /> : <Plus className="h-3.5 w-3.5" />}
               {addingSession ? "Cancel" : "Add"}
@@ -511,8 +511,8 @@ export default function StudentsPage() {
 
           <div className="divide-y divide-slate-50">
             {addingSession && (
-              <div className="p-5 bg-indigo-50/50 space-y-3">
-                <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400">New Session</p>
+              <div className="p-5 bg-red-50/50 space-y-3">
+                <p className="text-[10px] font-black uppercase tracking-widest text-red-400">New Session</p>
                 <div className="grid grid-cols-2 gap-3">
                   <Field label="Date">
                     <input type="date" value={newSession.date ?? ""} onChange={e => setNewSession(d => ({ ...d, date: e.target.value }))} className={inputCls} />
@@ -534,7 +534,7 @@ export default function StudentsPage() {
                 <button
                   onClick={addSession}
                   disabled={sessioning}
-                  className="w-full h-9 rounded-xl bg-indigo-600 text-white text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-indigo-700 transition-all disabled:opacity-50"
+                  className="w-full h-9 rounded-xl bg-red-600 text-white text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-red-700 transition-all disabled:opacity-50"
                 >
                   {sessioning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
                   Create Session
@@ -587,7 +587,7 @@ export default function StudentsPage() {
                           <button
                             onClick={() => saveSession(s.id)}
                             disabled={sessioning}
-                            className="flex-1 h-8 rounded-xl bg-indigo-600 text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 hover:bg-indigo-700 transition-all disabled:opacity-50"
+                            className="flex-1 h-8 rounded-xl bg-red-600 text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 hover:bg-red-700 transition-all disabled:opacity-50"
                           >
                             {sessioning ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
                             Save
@@ -602,8 +602,8 @@ export default function StudentsPage() {
                       </div>
                     ) : (
                       <div className="flex items-start gap-4">
-                        <div className="h-10 w-10 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
-                          <CalendarDays className="h-4 w-4 text-indigo-400" />
+                        <div className="h-10 w-10 rounded-xl bg-red-50 flex items-center justify-center shrink-0">
+                          <CalendarDays className="h-4 w-4 text-red-400" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
@@ -625,7 +625,7 @@ export default function StudentsPage() {
                         <div className="flex items-center gap-1 shrink-0">
                           <button
                             onClick={() => { setEditingSession(s.id); setSessionDraft({}) }}
-                            className="h-7 w-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
+                            className="h-7 w-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 transition-all"
                           >
                             <Edit3 className="h-3.5 w-3.5" />
                           </button>
@@ -653,14 +653,20 @@ export default function StudentsPage() {
     <div className="min-h-screen bg-slate-50 font-sans">
 
       {/* Header */}
-      <div className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur px-4 md:px-6 py-4 flex items-center justify-between">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Dees Driver Training</p>
-          <h1 className="text-xl font-black text-slate-800 leading-tight">Students</h1>
+      <div className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur px-4 md:px-6 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <img
+            src="https://driving-school-gold.vercel.app/DEES-DRIVER-TRAINING-LOGO.png"
+            alt="Dees Driver Training"
+            className="h-10 w-auto object-contain"
+          />
+          <div className="border-l border-slate-200 pl-3">
+            <h1 className="text-xl font-black text-slate-800 leading-tight">Students</h1>
+          </div>
         </div>
         <button
           onClick={loadStudents}
-          className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-indigo-600 transition-colors"
+          className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-red-600 transition-colors"
         >
           <RefreshCw className="h-3.5 w-3.5" /> Refresh
         </button>
@@ -684,7 +690,7 @@ export default function StudentsPage() {
                   placeholder="Search students…"
                   value={search}
                   onChange={e => setSearch(e.target.value)}
-                  className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-50 transition-all"
+                  className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:border-red-300 focus:ring-2 focus:ring-red-50 transition-all"
                 />
               </div>
             </div>
@@ -715,7 +721,7 @@ export default function StudentsPage() {
                     <button
                       key={s.id}
                       onClick={() => selectStudent(s)}
-                      className="w-full text-left px-4 py-3.5 border-b border-slate-100 transition-all hover:bg-slate-50 active:bg-indigo-50"
+                      className="w-full text-left px-4 py-3.5 border-b border-slate-100 transition-all hover:bg-slate-50 active:bg-red-50"
                     >
                       <div className="flex items-center gap-3">
                         <Avatar name={fullName} />
@@ -749,7 +755,7 @@ export default function StudentsPage() {
                 placeholder="Search students…"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-50 transition-all"
+                className="w-full pl-9 pr-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-sm font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:border-red-300 focus:ring-2 focus:ring-red-50 transition-all"
               />
             </div>
           </div>
@@ -781,17 +787,17 @@ export default function StudentsPage() {
                   <button
                     key={s.id}
                     onClick={() => selectStudent(s)}
-                    className={`w-full text-left px-4 py-3.5 border-b border-slate-50 transition-all hover:bg-slate-50 ${isSelected ? "bg-indigo-50 border-l-2 border-l-indigo-500" : ""}`}
+                    className={`w-full text-left px-4 py-3.5 border-b border-slate-50 transition-all hover:bg-slate-50 ${isSelected ? "bg-red-50 border-l-2 border-l-red-500" : ""}`}
                   >
                     <div className="flex items-center gap-3">
                       <Avatar name={fullName} />
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-black truncate ${isSelected ? "text-indigo-700" : "text-slate-800"}`}>{fullName}</p>
+                        <p className={`text-sm font-black truncate ${isSelected ? "text-red-700" : "text-slate-800"}`}>{fullName}</p>
                         <p className="text-[11px] text-slate-400 font-bold truncate">{s.package || "No package"}</p>
                         {s.lessons > 0 && <div className="mt-1"><ProgressBar done={s.lessonsDone} total={s.lessons} /></div>}
                       </div>
                       {s.paid && <BadgeCheck className="h-4 w-4 text-emerald-400 shrink-0" />}
-                      <ChevronRight className={`h-3.5 w-3.5 shrink-0 ${isSelected ? "text-indigo-400" : "text-slate-300"}`} />
+                      <ChevronRight className={`h-3.5 w-3.5 shrink-0 ${isSelected ? "text-red-400" : "text-slate-300"}`} />
                     </div>
                   </button>
                 )
