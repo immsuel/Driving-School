@@ -784,7 +784,7 @@ export default function AdminBookingPage() {
                   <AdminInput type="email" value={student.email} onChange={v => setStudent(s => ({ ...s, email: v }))} placeholder="email@example.com" />
                 </Field>
                 <div className="col-span-1 sm:col-span-2">
-                  <Field label="Pickup address (optional)">
+                  <Field label="Address (optional)">
                     <AdminInput value={student.location} onChange={v => setStudent(s => ({ ...s, location: v }))} placeholder="123 Street, Suburb" />
                   </Field>
                 </div>
