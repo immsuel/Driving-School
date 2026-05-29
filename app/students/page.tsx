@@ -282,7 +282,7 @@ export default function StudentsPage() {
       if (sessionDraft.date           !== undefined) fields["Date"]            = sessionDraft.date
       if (sessionDraft.time           !== undefined) fields["Time"]            = sessionDraft.time
       if (sessionDraft.duration       !== undefined) fields["Duration"]        = sessionDraft.duration
-      if (sessionDraft.confirmed      !== undefined) fields["Confirmed"]       = sessionDraft.confirmed ? "checked" : ""
+      if (sessionDraft.confirmed !== undefined) fields["Confirmed"] = sessionDraft.confirmed ? true : false
       if (sessionDraft.instructorName !== undefined) fields["Instructor Name"] = sessionDraft.instructorName
       await api.sessions.patch(id, fields)
       setSessions(prev => prev.map(s => s.id === id ? { ...s, ...sessionDraft } as Session : s))
@@ -306,6 +306,19 @@ export default function StudentsPage() {
     }
   }
 
+  // delete student
+  async function deleteStudent(id: string) {
+  if (!confirm("Permanently delete this student profile? This cannot be undone.")) return
+  try {
+    await apiMutate(`/api/students?id=${id}`, "DELETE")
+    setStudents(prev => prev.filter(s => s.id !== id))
+    setSelected(null)
+    setSessions([])
+  } catch (e) {
+    alert(String(e))
+  }
+}
+
   // ── Add session ──
   async function addSession() {
     if (!selected) return
@@ -318,7 +331,7 @@ export default function StudentsPage() {
         "Time":            newSession.time            ?? "",
         "Duration":        newSession.duration        ?? "",
         "Instructor Name": newSession.instructorName  ?? "",
-        "Confirmed":       newSession.confirmed ? "checked" : "",
+        "Confirmed": newSession.confirmed ? true : false,
       }
       const rec = await api.sessions.create(fields)
       setSessions(prev => [...prev, mapSession(rec)])
@@ -359,6 +372,15 @@ export default function StudentsPage() {
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">Student Profile</p>
             <h2 className="text-lg font-black text-slate-800 leading-tight truncate">{selected.firstName} {selected.lastName}</h2>
           </div>
+
+          <button
+            onClick={() => deleteStudent(selected.id)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 border border-red-200 text-red-600 text-[10px] font-black uppercase tracking-widest hover:bg-red-100 transition-all shrink-0"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Delete</span>
+          </button>
+
           <button
             onClick={() => {
               const params = new URLSearchParams({
