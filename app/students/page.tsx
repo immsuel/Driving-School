@@ -633,7 +633,7 @@ export default function StudentsPage() {
       {/* Header */}
       <div className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur px-4 md:px-6 py-4 flex items-center justify-between">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Driving School</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Dees Driver Training</p>
           <h1 className="text-xl font-black text-slate-800 leading-tight">Students</h1>
         </div>
         <button
