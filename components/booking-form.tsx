@@ -671,49 +671,26 @@ function ProofScreen({ bookingRef, total, email }: { bookingRef: string; total: 
       <div className="h-20 w-20 rounded-full bg-indigo-100 flex items-center justify-center mx-auto">
         <Banknote className="h-9 w-9 text-indigo-600" />
       </div>
+      
       <div>
-        <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-2">EFT Payment</p>
-        <h3 className="text-2xl font-black uppercase tracking-tight text-slate-900">Send Proof of Payment</h3>
-        <p className="text-slate-500 mt-3 text-sm font-medium leading-relaxed">
-          Once you've made your EFT of{" "}
-          <span className="font-black text-slate-900">{total}</span>, WhatsApp your proof to:
+        <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-2">
+          Booking Reserved
+        </p>
+        <h3 className="text-2xl font-black uppercase tracking-tight text-slate-900">
+          Thank you for reserving your booking
+        </h3>
+      </div>
+
+      <div className="p-8 rounded-2xl border-2 border-indigo-200 bg-indigo-50/50">
+        <p className="text-slate-700 text-base font-medium leading-relaxed">
+          Kindly check your <span className="font-black text-indigo-600">WhatsApp</span>; we've sent payment instructions to the phone number you've provided.
         </p>
       </div>
-      <div className="p-8 rounded-2xl border-2 border-indigo-200 bg-indigo-50/50 space-y-4">
-        <div className="space-y-1">
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Bank</p>
-          <p className="text-2xl font-black tracking-tight text-indigo-600">Standard Bank</p>
-        </div>
-        <div className="h-px bg-indigo-100" />
-        <div className="space-y-1">
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Account Number</p>
-          <p className="text-2xl font-black tracking-tight text-indigo-600">251113183</p>
-        </div>
-        <div className="h-px bg-indigo-100" />
-        <div className="space-y-1">
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">WhatsApp Proof to</p>
-          
-            <button
-              onClick={() => window.open("https://wa.me/27824406585", "_blank")}
-              className="text-2xl font-black tracking-tight text-indigo-600 underline underline-offset-4 hover:text-indigo-800 transition-colors"
-            >
-              082 440 6585
-            </button>
-        </div>
-      </div>
+
       <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-1">
         <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Booking Reference</p>
         <p className="text-xl font-black tracking-widest text-slate-900">{bookingRef}</p>
-        <p className="text-[10px] text-slate-400 font-bold uppercase">Include this with your proof of payment</p>
-      </div>
-      <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-100 text-left space-y-2">
-        <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600">What happens next</p>
-        <ul className="text-[11px] text-emerald-800 font-bold uppercase space-y-1.5 leading-relaxed">
-          <li>→ WhatsApp your proof to 082 440 6585</li>
-          <li>→ Include reference <span className="text-emerald-600">{bookingRef}</span></li>
-          <li>→ We'll confirm your sessions within 2 business hours</li>
-          <li>→ Confirmation will be sent to <span className="text-emerald-600">{email}</span></li>
-        </ul>
+        <p className="text-[10px] text-slate-400 font-bold uppercase">Total Amount: {total}</p>
       </div>
     </div>
   )
@@ -858,6 +835,7 @@ export default function LifestyleBookingForm() {
         }
       }),
       bookingRef: ref,
+      //source:     "Online Booking",
       timestamp:  new Date().toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" }),
     }
 
