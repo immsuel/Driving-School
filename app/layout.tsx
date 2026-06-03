@@ -8,8 +8,7 @@ const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-dm-sans", weight:
 
 export const metadata: Metadata = {
   title: 'Dees Driver Training',
-  description: 'Learn to drive with confidence. Professional instructors, flexible scheduling, and a 95% first-time pass rate. Book your first lesson today.',
-  generator: 'v0.app',
+  description: 'Learn to drive with confidence. Professional instructors, flexible scheduling. Book your first lesson today.',
   icons: {
     icon: [
       {
