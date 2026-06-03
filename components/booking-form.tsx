@@ -7,7 +7,7 @@ import { Label }    from "@/components/ui/label"
 import { Calendar } from "@/components/ui/calendar"
 import {
   CheckCircle2, ArrowRight, ArrowLeft, Loader2,
-  AlertCircle, Banknote, X, Info, Shield,
+  AlertCircle, Banknote, X, Info, Shield, Clock,
 } from "lucide-react"
 
 import { getBatchAvailability, type AssignedInstructor } from "@/app/actions/instructors"
@@ -62,6 +62,12 @@ const LD_PAYMENT_METHODS = [
     icon:        Shield,
     description: "Pay in person; sessions not paid will be cancelled after 48h",
   },
+]
+
+// Available time slots: 07:00 – 17:00 (last slot starts at 17:00, ends 18:00)
+const TIME_SLOTS = [
+  "07:00", "08:00", "09:00", "10:00", "11:00",
+  "12:00", "13:00", "14:00", "15:00", "16:00", "17:00",
 ]
 
 const STEP_LABELS = ["Agreement", "Package", "Days", "Your details", "Payment"]
@@ -330,7 +336,7 @@ function PackageStep({
                     R{pkg.price.toLocaleString("en-ZA")}
                   </p>
                   <p className="text-[9px] text-slate-400 font-bold uppercase">
-                    {pkg.days} {pkg.days === 1 ? "day" : "days"}
+                    {pkg.days} × 1h {pkg.days === 1 ? "session" : "sessions"}
                   </p>
                 </div>
               </div>
@@ -344,7 +350,7 @@ function PackageStep({
           <div>
             <p className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Selected</p>
             <p className="text-[11px] font-bold text-indigo-700 mt-0.5 uppercase">
-              {selected.label} — {selected.days} {selected.days === 1 ? "day" : "days"}
+              {selected.label} — {selected.days} × 1h {selected.days === 1 ? "session" : "sessions"}
             </p>
           </div>
           <p className="text-2xl font-black text-indigo-600">R{selected.price.toLocaleString("en-ZA")}</p>
@@ -354,19 +360,64 @@ function PackageStep({
   )
 }
 
-// ─── Step 2: Day selection + availability ────────────────────────────────────
+// ─── Time slot picker (per day) ──────────────────────────────────────────────
+
+function TimeSlotPicker({
+  date,
+  selected,
+  onSelect,
+}: {
+  date:     Date
+  selected: string | undefined
+  onSelect: (time: string) => void
+}) {
+  return (
+    <div className="mt-2 p-4 rounded-2xl bg-white border border-indigo-100 shadow-sm animate-in fade-in slide-in-from-top-1 duration-150">
+      <div className="flex items-center gap-2 mb-3">
+        <Clock className="h-3.5 w-3.5 text-indigo-400" />
+        <p className="text-[10px] font-black uppercase tracking-widest text-indigo-500">
+          Pick a time for {formatShortDate(date)}
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {TIME_SLOTS.map((slot) => {
+          const isActive = selected === slot
+          return (
+            <button
+              key={slot}
+              onClick={() => onSelect(slot)}
+              className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 ${
+                isActive
+                  ? "bg-indigo-600 text-white shadow-md"
+                  : "bg-slate-50 text-slate-500 border border-slate-200 hover:border-indigo-300 hover:text-indigo-600 hover:bg-indigo-50"
+              }`}
+            >
+              {slot}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Step 2: Day + time selection + availability ─────────────────────────────
 
 function DaySelectionStep({
   pkg,
   selectedDays,
+  sessionTimes,
   onToggle,
   onDeselect,
+  onTimeSelect,
   onInstructorsResolved,
 }: {
   pkg:                    LDPackage
   selectedDays:           Date[]
+  sessionTimes:           Record<string, string>   // dateStr → "HH:MM"
   onToggle:               (d: Date) => void
   onDeselect:             (d: Date) => void
+  onTimeSelect:           (dateStr: string, time: string) => void
   onInstructorsResolved:  (map: Record<string, AssignedInstructor>) => void
 }) {
   const earliest = minBookableDate()
@@ -381,6 +432,7 @@ function DaySelectionStep({
   const [unavailableDates, setUnavailableDates]           = useState<Set<string>>(new Set())
   const [isLoadingAvailability, setIsLoadingAvailability] = useState(false)
   const [availabilityError, setAvailabilityError]         = useState(false)
+  const [expandedDay, setExpandedDay]                     = useState<string | null>(null)
 
   const fetchController = useRef<AbortController | null>(null)
 
@@ -429,30 +481,49 @@ function DaySelectionStep({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [calMonth])
 
-  const remaining = pkg.days - selectedDays.length
-  const done      = remaining === 0
+  const timesAssigned = selectedDays.filter((d) => !!sessionTimes[toDateStr(d)]).length
+  const allTimesSet   = selectedDays.length === pkg.days && timesAssigned === pkg.days
+  const remaining     = pkg.days - selectedDays.length
 
   const isUnavailable = (d: Date) => unavailableDates.has(toDateStr(d))
+
+  const sortedDays = [...selectedDays].sort((a, b) => a.getTime() - b.getTime())
 
   return (
     <div className="space-y-6 lg:space-y-8 animate-in fade-in slide-in-from-bottom-4">
       <SectionHeader
         step={2}
-        title="Select your days"
-        sub={`Pick ${pkg.days} ${pkg.days === 1 ? "day" : "days"} — at least ${MIN_ADVANCE_DAYS} days in advance. Sundays and unavailable days are blocked.`}
+        title="Select your sessions"
+        sub={`Pick ${pkg.days} ${pkg.days === 1 ? "day" : "days"} and a start time for each 1-hour session.`}
       />
 
-      {/* Progress bar */}
-      <div className="flex items-center gap-3">
-        <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-          <div
-            className="h-full rounded-full bg-indigo-600 transition-all duration-300"
-            style={{ width: `${(selectedDays.length / pkg.days) * 100}%` }}
-          />
+      {/* Progress bar — tracks days chosen */}
+      <div className="space-y-1">
+        <div className="flex items-center gap-3">
+          <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-indigo-600 transition-all duration-300"
+              style={{ width: `${(selectedDays.length / pkg.days) * 100}%` }}
+            />
+          </div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 shrink-0">
+            {selectedDays.length}/{pkg.days} days
+          </p>
         </div>
-        <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 shrink-0">
-          {selectedDays.length}/{pkg.days}
-        </p>
+        {/* Second bar: times */}
+        {selectedDays.length > 0 && (
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-1 rounded-full bg-slate-100 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-emerald-500 transition-all duration-300"
+                style={{ width: `${(timesAssigned / pkg.days) * 100}%` }}
+              />
+            </div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 shrink-0">
+              {timesAssigned}/{pkg.days} timed
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Calendar — two-column on desktop: calendar left, chips + status right */}
@@ -498,36 +569,105 @@ function DaySelectionStep({
           </div>
         </div>
 
-        {/* Right panel: chips + status */}
-        <div className="flex-1 space-y-4 lg:pt-2">
+        {/* Right panel: day + time chips + status */}
+        <div className="flex-1 space-y-3 lg:pt-2">
           {availabilityError && (
             <StatusBanner variant="warning">
               Couldn't load availability — please try again or contact us directly.
             </StatusBanner>
           )}
 
-          {/* Selected day chips */}
-          {selectedDays.length > 0 ? (
-            <div className="flex flex-wrap gap-2 animate-in fade-in">
-              {[...selectedDays]
-                .sort((a, b) => a.getTime() - b.getTime())
-                .map((d) => (
+          {/* Selected day cards with time picker */}
+          {sortedDays.length > 0 ? (
+            <div className="space-y-2">
+              {sortedDays.map((d) => {
+                const dateStr   = toDateStr(d)
+                const time      = sessionTimes[dateStr]
+                const isOpen    = expandedDay === dateStr
+                const hasTime   = !!time
+
+                return (
                   <div
                     key={d.toISOString()}
-                    className="flex items-center gap-1.5 rounded-full bg-indigo-50 border border-indigo-100 pl-3 pr-1.5 py-1"
+                    className={`rounded-2xl border transition-all ${
+                      hasTime
+                        ? "border-emerald-200 bg-emerald-50/60"
+                        : isOpen
+                        ? "border-indigo-300 bg-indigo-50/40"
+                        : "border-slate-200 bg-white"
+                    }`}
                   >
-                    <span className="text-[10px] font-black text-indigo-700 uppercase">
-                      {formatShortDate(d)}
-                    </span>
-                    <button
-                      onClick={() => onToggle(d)}
-                      className="h-4 w-4 rounded-full bg-indigo-200 text-indigo-600 flex items-center justify-center hover:bg-red-200 hover:text-red-600 transition-colors"
-                      aria-label={`Remove ${formatShortDate(d)}`}
-                    >
-                      <X className="h-2.5 w-2.5" />
-                    </button>
+                    {/* Day header row */}
+                    <div className="flex items-center gap-2 px-3 py-2.5">
+                      <div
+                        className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 transition-colors ${
+                          hasTime ? "bg-emerald-500" : "bg-slate-200"
+                        }`}
+                      >
+                        {hasTime
+                          ? <CheckCircle2 className="h-3.5 w-3.5 text-white" />
+                          : <Clock className="h-3 w-3 text-slate-400" />
+                        }
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <span className={`text-[10px] font-black uppercase tracking-widest ${
+                          hasTime ? "text-emerald-700" : "text-slate-700"
+                        }`}>
+                          {formatShortDate(d)}
+                        </span>
+                        {hasTime && (
+                          <span className="ml-2 text-[10px] font-bold text-emerald-600">
+                            @ {time}–{String(Number(time.split(":")[0]) + 1).padStart(2, "0")}:00
+                          </span>
+                        )}
+                        {!hasTime && (
+                          <span className="ml-2 text-[9px] font-bold text-slate-400 uppercase">
+                            tap to set time
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => setExpandedDay(isOpen ? null : dateStr)}
+                          className={`h-7 px-2.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-colors ${
+                            isOpen
+                              ? "bg-indigo-100 text-indigo-600"
+                              : "bg-slate-100 text-slate-500 hover:bg-indigo-50 hover:text-indigo-600"
+                          }`}
+                        >
+                          {hasTime ? "Change" : "Set time"}
+                        </button>
+                        <button
+                          onClick={() => {
+                            onToggle(d)
+                            if (isOpen) setExpandedDay(null)
+                          }}
+                          className="h-7 w-7 rounded-full flex items-center justify-center bg-slate-100 text-slate-400 hover:bg-red-100 hover:text-red-500 transition-colors"
+                          aria-label={`Remove ${formatShortDate(d)}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Inline time picker */}
+                    {isOpen && (
+                      <div className="px-3 pb-3">
+                        <TimeSlotPicker
+                          date={d}
+                          selected={time}
+                          onSelect={(t) => {
+                            onTimeSelect(dateStr, t)
+                            setExpandedDay(null)
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
-                ))}
+                )
+              })}
             </div>
           ) : (
             <p className="text-[11px] font-bold text-slate-300 uppercase tracking-widest">
@@ -536,17 +676,21 @@ function DaySelectionStep({
           )}
 
           {/* Status message */}
-          {done ? (
+          {allTimesSet ? (
             <StatusBanner variant="success">
-              All {pkg.days} {pkg.days === 1 ? "day" : "days"} selected — tap Continue.
+              All {pkg.days} {pkg.days === 1 ? "session" : "sessions"} scheduled — tap Continue.
+            </StatusBanner>
+          ) : selectedDays.length === pkg.days && timesAssigned < pkg.days ? (
+            <StatusBanner variant="neutral">
+              {pkg.days - timesAssigned} {pkg.days - timesAssigned === 1 ? "session still needs" : "sessions still need"} a time — tap "Set time" above.
             </StatusBanner>
           ) : selectedDays.length > 0 ? (
             <StatusBanner variant="neutral">
-              {selectedDays.length} of {pkg.days} selected — pick {remaining} more.
+              {selectedDays.length} of {pkg.days} {selectedDays.length === 1 ? "day" : "days"} selected — pick {remaining} more.
             </StatusBanner>
           ) : (
             <StatusBanner variant="neutral">
-              Tap dates on the calendar to select your {pkg.days} training {pkg.days === 1 ? "day" : "days"}.
+              Tap dates on the calendar to select your {pkg.days} training {pkg.days === 1 ? "session" : "sessions"}.
               Greyed-out dates have no instructor available.
             </StatusBanner>
           )}
@@ -747,6 +891,8 @@ export default function LifestyleBookingForm() {
   const [popiaConsent, setPopiaConsent]   = useState(false)
   const [selectedPkg, setSelectedPkg]     = useState<LDPackage | null>(null)
   const [selectedDays, setSelectedDays]   = useState<Date[]>([])
+  // time per date: { "2025-08-04": "09:00" }
+  const [sessionTimes, setSessionTimes]   = useState<Record<string, string>>({})
   const [sessionInstructors, setSessionInstructors] = useState<Record<string, AssignedInstructor>>({})
   const [formData, setFormData]           = useState<FormData>({
     firstName: "", lastName: "", email: "", phone: "", location: "",
@@ -763,7 +909,15 @@ export default function LifestyleBookingForm() {
   const toggleDay = (d: Date) => {
     setSelectedDays((prev) => {
       const exists = prev.some((s) => s.toDateString() === d.toDateString())
-      if (exists) return prev.filter((s) => s.toDateString() !== d.toDateString())
+      if (exists) {
+        // also clear its time
+        setSessionTimes((t) => {
+          const next = { ...t }
+          delete next[toDateStr(d)]
+          return next
+        })
+        return prev.filter((s) => s.toDateString() !== d.toDateString())
+      }
       if (prev.length >= (selectedPkg?.days ?? 0)) return prev
       return [...prev, d]
     })
@@ -771,6 +925,15 @@ export default function LifestyleBookingForm() {
 
   const deselectDay = (d: Date) => {
     setSelectedDays((prev) => prev.filter((s) => s.toDateString() !== d.toDateString()))
+    setSessionTimes((t) => {
+      const next = { ...t }
+      delete next[toDateStr(d)]
+      return next
+    })
+  }
+
+  const handleTimeSelect = (dateStr: string, time: string) => {
+    setSessionTimes((prev) => ({ ...prev, [dateStr]: time }))
   }
 
   const handleInstructorsResolved = (map: Record<string, AssignedInstructor>) => {
@@ -779,6 +942,7 @@ export default function LifestyleBookingForm() {
 
   useEffect(() => {
     setSelectedDays([])
+    setSessionTimes({})
     setSessionInstructors({})
   }, [selectedPkg?.id])
 
@@ -791,7 +955,12 @@ export default function LifestyleBookingForm() {
   const canProceed = (): boolean => {
     if (step === 0) return popiaConsent
     if (step === 1) return !!selectedPkg
-    if (step === 2) return selectedDays.length === (selectedPkg?.days ?? -1)
+    if (step === 2) {
+      if (!selectedPkg) return false
+      if (selectedDays.length !== selectedPkg.days) return false
+      // every day must have a time assigned
+      return selectedDays.every((d) => !!sessionTimes[toDateStr(d)])
+    }
     if (step === 3) return (
       !!formData.firstName && !!formData.lastName &&
       !!formData.email && isValidSAPhone(formData.phone) &&
@@ -824,18 +993,20 @@ export default function LifestyleBookingForm() {
       sessions: sortedDays.map((d) => {
         const dateStr    = toDateStr(d)
         const instructor = sessionInstructors[dateStr]
+        const time       = sessionTimes[dateStr] ?? "08:00"
+        const endHour    = String(Number(time.split(":")[0]) + 1).padStart(2, "0")
         return {
           date:                dateStr,
           formattedDate:       d.toLocaleDateString("en-ZA", { weekday: "long", day: "2-digit", month: "short" }),
-          time:                "08:00",
-          duration:            "10h",
+          time,
+          endTime:             `${endHour}:00`,
+          duration:            "1h",
           instructorFirstName: instructor?.firstName ?? "",
           instructorLastName:  instructor?.lastName  ?? "",
           instructorPhone:     instructor?.phone     ?? "",
         }
       }),
       bookingRef: ref,
-      //source:     "Online Booking",
       timestamp:  new Date().toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" }),
     }
 
@@ -896,8 +1067,10 @@ export default function LifestyleBookingForm() {
           <DaySelectionStep
             pkg={selectedPkg}
             selectedDays={selectedDays}
+            sessionTimes={sessionTimes}
             onToggle={toggleDay}
             onDeselect={deselectDay}
+            onTimeSelect={handleTimeSelect}
             onInstructorsResolved={handleInstructorsResolved}
           />
         )}
@@ -957,7 +1130,7 @@ export default function LifestyleBookingForm() {
             <p className="text-sm font-black uppercase text-slate-900">{selectedPkg.label}</p>
           </div>
           <div>
-            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Days booked</p>
+            <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1">Sessions booked</p>
             <p className="text-sm font-black uppercase text-slate-900">
               {selectedDays.length}/{selectedPkg.days}
             </p>
