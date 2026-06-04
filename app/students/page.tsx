@@ -655,15 +655,22 @@ export default function StudentsPage() {
       {/* Header */}
       <div className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur px-4 md:px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <img
-            src="https://driving-school-gold.vercel.app/DEES-DRIVER-TRAINING-LOGO.png"
-            alt="Dees Driver Training"
-            className="h-10 w-auto object-contain"
-          />
-          <div className="border-l border-slate-200 pl-3">
-            <h1 className="text-xl font-black text-slate-800 leading-tight">Students</h1>
-          </div>
+        <button
+          onClick={() => window.location.href = "/admin"}
+          className="h-8 w-8 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-all"
+          title="Back to Admin"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </button>
+        <img
+          src="https://driving-school-gold.vercel.app/DEES-DRIVER-TRAINING-LOGO.png"
+          alt="Dees Driver Training"
+          className="h-10 w-auto object-contain"
+        />
+        <div className="border-l border-slate-200 pl-3">
+          <h1 className="text-xl font-black text-slate-800 leading-tight">Students</h1>
         </div>
+      </div>
         <button
           onClick={loadStudents}
           className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-red-600 transition-colors"
