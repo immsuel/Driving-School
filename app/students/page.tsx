@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import {
   Search, ChevronRight, X, Loader2, CheckCircle2,
   AlertCircle, User, Phone, Mail, MapPin, Package,
@@ -40,6 +40,8 @@ interface Session {
   instructorPhone: string
   confirmed: boolean
 }
+
+type OverlayMode = "print" | "certificate" | null
 
 // ---------------------------------------------------------------------------
 // API helpers
@@ -120,7 +122,7 @@ function mapSession(r: { id: string; fields: Record<string, unknown> }): Session
 }
 
 // ---------------------------------------------------------------------------
-// Export helpers
+// HTML generators
 // ---------------------------------------------------------------------------
 
 function formatDateDisplay(dateStr: string) {
@@ -129,191 +131,192 @@ function formatDateDisplay(dateStr: string) {
     return new Date(dateStr + "T00:00:00").toLocaleDateString("en-ZA", {
       weekday: "short", day: "2-digit", month: "short", year: "numeric",
     })
-  } catch {
-    return dateStr
-  }
+  } catch { return dateStr }
 }
 
-function printStudentReport(student: Student, sessions: Session[]) {
+function buildReportHTML(student: Student, sessions: Session[]): string {
   const sortedSessions = [...sessions].sort((a, b) => a.date.localeCompare(b.date))
-  const completedSessions = sortedSessions.filter(s => s.confirmed).length
+  const confirmedCount = sortedSessions.filter(s => s.confirmed).length
   const progressPct = student.lessons > 0
     ? Math.min(100, Math.round((student.lessonsDone / student.lessons) * 100))
     : 0
+  const totalHours = sessions.reduce((acc, s) => acc + (parseFloat(s.duration) || 0), 0)
 
   const sessionRows = sortedSessions.map((s, i) => `
-    <tr class="${i % 2 === 0 ? "row-even" : "row-odd"}">
-      <td>${i + 1}</td>
-      <td>${formatDateDisplay(s.date)}</td>
-      <td>${s.time || "—"}</td>
-      <td>${s.duration ? s.duration + "h" : "—"}</td>
-      <td>${s.instructorName || "—"}</td>
-      <td><span class="badge ${s.confirmed ? "badge-confirmed" : "badge-pending"}">${s.confirmed ? "Confirmed" : "Pending"}</span></td>
-    </tr>
-  `).join("")
+    <tr style="background:${i % 2 === 0 ? "#ffffff" : "#f8fafc"}">
+      <td style="padding:9px 12px;border-bottom:1px solid #f1f5f9;color:#334155;font-weight:600">${i + 1}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #f1f5f9;color:#334155;font-weight:600">${formatDateDisplay(s.date)}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #f1f5f9;color:#334155;font-weight:600">${s.time || "—"}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #f1f5f9;color:#334155;font-weight:600">${s.duration ? s.duration + "h" : "—"}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #f1f5f9;color:#334155;font-weight:600">${s.instructorName || "—"}</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #f1f5f9">
+        <span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:8pt;font-weight:900;text-transform:uppercase;letter-spacing:0.08em;background:${s.confirmed ? "#dcfce7" : "#fef3c7"};color:${s.confirmed ? "#16a34a" : "#d97706"}">
+          ${s.confirmed ? "Confirmed" : "Pending"}
+        </span>
+      </td>
+    </tr>`).join("")
 
-  const html = `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <title>Student Report — ${student.firstName} ${student.lastName}</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, sans-serif; font-size: 11pt; color: #1e293b; background: white; padding: 24px 32px; }
-
-    .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #dc2626; padding-bottom: 16px; margin-bottom: 24px; }
-    .header-left { display: flex; flex-direction: column; gap: 2px; }
-    .company { font-size: 9pt; font-weight: 900; text-transform: uppercase; letter-spacing: 0.15em; color: #dc2626; }
-    .report-title { font-size: 18pt; font-weight: 900; color: #0f172a; }
-    .report-date { font-size: 8pt; color: #94a3b8; font-weight: bold; margin-top: 2px; }
-    .header-right { text-align: right; }
-    .student-initials { width: 52px; height: 52px; background: #fee2e2; color: #dc2626; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 16pt; font-weight: 900; }
-
-    .section { margin-bottom: 28px; }
-    .section-title { font-size: 8pt; font-weight: 900; text-transform: uppercase; letter-spacing: 0.15em; color: #64748b; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 14px; }
-
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
-    .info-item { display: flex; flex-direction: column; gap: 2px; }
-    .info-label { font-size: 7.5pt; font-weight: 900; text-transform: uppercase; letter-spacing: 0.12em; color: #94a3b8; }
-    .info-value { font-size: 10.5pt; font-weight: 700; color: #1e293b; }
-    .info-value.paid { color: #16a34a; }
-    .info-value.unpaid { color: #94a3b8; }
-
-    .progress-bar-outer { height: 8px; background: #f1f5f9; border-radius: 99px; overflow: hidden; margin-top: 4px; }
-    .progress-bar-inner { height: 100%; background: #dc2626; border-radius: 99px; }
-    .progress-label { font-size: 8pt; font-weight: 900; color: #64748b; margin-top: 4px; }
-
-    .stats-row { display: flex; gap: 16px; margin-bottom: 20px; }
-    .stat-card { flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; }
-    .stat-value { font-size: 20pt; font-weight: 900; color: #0f172a; }
-    .stat-label { font-size: 7.5pt; font-weight: 900; text-transform: uppercase; letter-spacing: 0.12em; color: #94a3b8; margin-top: 2px; }
-    .stat-card.accent { background: #fef2f2; border-color: #fecaca; }
-    .stat-card.accent .stat-value { color: #dc2626; }
-
-    table { width: 100%; border-collapse: collapse; font-size: 10pt; }
-    thead tr { background: #0f172a; color: white; }
-    thead th { padding: 9px 12px; text-align: left; font-size: 8pt; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; }
-    tbody tr.row-even { background: white; }
-    tbody tr.row-odd { background: #f8fafc; }
-    tbody td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; color: #334155; font-weight: 600; }
-
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 8pt; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; }
-    .badge-confirmed { background: #dcfce7; color: #16a34a; }
-    .badge-pending { background: #fef3c7; color: #d97706; }
-
-    .footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 8pt; color: #94a3b8; font-weight: bold; }
-
-    @media print {
-      body { padding: 0; }
-      @page { margin: 18mm 20mm; }
-    }
+    body { font-family: Arial, sans-serif; font-size: 11pt; color: #1e293b; background: white; padding: 32px 40px; }
+    @media print { body { padding: 0; } @page { margin: 18mm 20mm; } }
   </style>
 </head>
 <body>
-
-  <div class="header">
-    <div class="header-left">
-      <span class="company">Dee's Driver Training</span>
-      <span class="report-title">${student.firstName} ${student.lastName}</span>
-      <span class="report-date">Generated ${new Date().toLocaleDateString("en-ZA", { day: "2-digit", month: "long", year: "numeric" })}</span>
+  <!-- Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #dc2626;padding-bottom:16px;margin-bottom:28px">
+    <div>
+      <div style="font-size:8.5pt;font-weight:900;text-transform:uppercase;letter-spacing:0.15em;color:#dc2626;margin-bottom:4px">Dee's Driver Training</div>
+      <div style="font-size:20pt;font-weight:900;color:#0f172a;line-height:1.1">${student.firstName} ${student.lastName}</div>
+      <div style="font-size:8pt;color:#94a3b8;font-weight:bold;margin-top:4px">Generated ${new Date().toLocaleDateString("en-ZA", { day: "2-digit", month: "long", year: "numeric" })}</div>
     </div>
-    <div class="header-right">
-      <div class="student-initials" style="display:inline-flex">${(student.firstName[0] ?? "") + (student.lastName[0] ?? "")}</div>
+    <div style="width:56px;height:56px;background:#fee2e2;color:#dc2626;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18pt;font-weight:900">
+      ${(student.firstName[0] ?? "") + (student.lastName[0] ?? "")}
     </div>
   </div>
 
-  <div class="section">
-    <div class="section-title">Student Information</div>
-    <div class="info-grid">
-      <div class="info-item">
-        <span class="info-label">Email</span>
-        <span class="info-value">${student.email || "—"}</span>
-      </div>
-      <div class="info-item">
-        <span class="info-label">Phone</span>
-        <span class="info-value">${student.phone || "—"}</span>
-      </div>
-      <div class="info-item">
-        <span class="info-label">Package</span>
-        <span class="info-value">${student.package || "—"}</span>
-      </div>
-      <div class="info-item">
-        <span class="info-label">Pickup Address</span>
-        <span class="info-value">${student.pickupAddress || "—"}</span>
-      </div>
-      <div class="info-item">
-        <span class="info-label">Payment Status</span>
-        <span class="info-value ${student.paid ? "paid" : "unpaid"}">${student.paid ? "✓ Paid" : "Unpaid"}</span>
-      </div>
-      <div class="info-item">
-        <span class="info-label">Lesson Progress</span>
-        <div class="progress-bar-outer"><div class="progress-bar-inner" style="width:${progressPct}%"></div></div>
-        <span class="progress-label">${student.lessonsDone} of ${student.lessons} lessons done (${progressPct}%)</span>
+  <!-- Student Info -->
+  <div style="margin-bottom:28px">
+    <div style="font-size:8pt;font-weight:900;text-transform:uppercase;letter-spacing:0.15em;color:#64748b;border-bottom:1px solid #e2e8f0;padding-bottom:6px;margin-bottom:16px">Student Information</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+      ${[
+        ["Email", student.email || "—"],
+        ["Phone", student.phone || "—"],
+        ["Package", student.package || "—"],
+        ["Pickup Address", student.pickupAddress || "—"],
+        ["Payment Status", student.paid ? "✓ Paid" : "Unpaid", student.paid ? "#16a34a" : "#94a3b8"],
+      ].map(([label, value, color]) => `
+        <div>
+          <div style="font-size:7.5pt;font-weight:900;text-transform:uppercase;letter-spacing:0.12em;color:#94a3b8;margin-bottom:3px">${label}</div>
+          <div style="font-size:10.5pt;font-weight:700;color:${color || "#1e293b"}">${value}</div>
+        </div>`).join("")}
+      <div>
+        <div style="font-size:7.5pt;font-weight:900;text-transform:uppercase;letter-spacing:0.12em;color:#94a3b8;margin-bottom:3px">Lesson Progress</div>
+        <div style="height:8px;background:#f1f5f9;border-radius:99px;overflow:hidden;margin-bottom:4px">
+          <div style="height:100%;width:${progressPct}%;background:#dc2626;border-radius:99px"></div>
+        </div>
+        <div style="font-size:8pt;font-weight:900;color:#64748b">${student.lessonsDone} of ${student.lessons} lessons (${progressPct}%)</div>
       </div>
     </div>
   </div>
 
-  <div class="section">
-    <div class="section-title">Session Summary</div>
-    <div class="stats-row">
-      <div class="stat-card accent">
-        <div class="stat-value">${sessions.length}</div>
-        <div class="stat-label">Total Sessions</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">${completedSessions}</div>
-        <div class="stat-label">Confirmed</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">${sessions.length - completedSessions}</div>
-        <div class="stat-label">Pending</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-value">${sessions.reduce((acc, s) => acc + (parseFloat(s.duration) || 0), 0)}h</div>
-        <div class="stat-label">Total Hours</div>
-      </div>
-    </div>
+  <!-- Stats -->
+  <div style="display:flex;gap:14px;margin-bottom:28px">
+    ${[
+      ["Total Sessions", sessions.length, true],
+      ["Confirmed", confirmedCount, false],
+      ["Pending", sessions.length - confirmedCount, false],
+      ["Total Hours", totalHours + "h", false],
+    ].map(([label, value, accent]) => `
+      <div style="flex:1;background:${accent ? "#fef2f2" : "#f8fafc"};border:1px solid ${accent ? "#fecaca" : "#e2e8f0"};border-radius:10px;padding:12px 16px">
+        <div style="font-size:20pt;font-weight:900;color:${accent ? "#dc2626" : "#0f172a"}">${value}</div>
+        <div style="font-size:7.5pt;font-weight:900;text-transform:uppercase;letter-spacing:0.12em;color:#94a3b8;margin-top:3px">${label}</div>
+      </div>`).join("")}
   </div>
 
-  ${sessions.length > 0 ? `
-  <div class="section">
-    <div class="section-title">Sessions (${sessions.length})</div>
-    <table>
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Date</th>
-          <th>Time</th>
-          <th>Duration</th>
-          <th>Instructor</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${sessionRows}
-      </tbody>
-    </table>
+  <!-- Sessions table -->
+  <div>
+    <div style="font-size:8pt;font-weight:900;text-transform:uppercase;letter-spacing:0.15em;color:#64748b;border-bottom:1px solid #e2e8f0;padding-bottom:6px;margin-bottom:16px">Sessions (${sessions.length})</div>
+    ${sessions.length === 0
+      ? `<p style="color:#94a3b8;font-style:italic;font-size:10pt">No sessions recorded.</p>`
+      : `<table style="width:100%;border-collapse:collapse;font-size:10pt">
+          <thead>
+            <tr style="background:#0f172a;color:white">
+              ${["#","Date","Time","Duration","Instructor","Status"].map(h =>
+                `<th style="padding:9px 12px;text-align:left;font-size:8pt;font-weight:900;text-transform:uppercase;letter-spacing:0.1em">${h}</th>`
+              ).join("")}
+            </tr>
+          </thead>
+          <tbody>${sessionRows}</tbody>
+        </table>`}
   </div>
-  ` : `<div class="section"><div class="section-title">Sessions</div><p style="color:#94a3b8;font-style:italic;font-size:10pt">No sessions recorded.</p></div>`}
 
-  <div class="footer">
+  <!-- Footer -->
+  <div style="margin-top:36px;padding-top:12px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;font-size:8pt;color:#94a3b8;font-weight:bold">
     <span>Dee's Driver Training — Student Report</span>
     <span>${student.firstName} ${student.lastName} · ${student.package || "No package"}</span>
   </div>
-
-  <script>window.onload = () => window.print()</script>
 </body>
 </html>`
-
-  const win = window.open("", "_blank")
-  if (win) {
-    win.document.write(html)
-    win.document.close()
-  }
 }
 
+function buildCertificateHTML(student: Student): string {
+  const date = new Date().toLocaleDateString("en-ZA", { day: "2-digit", month: "long", year: "numeric" })
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Certificate — ${student.firstName} ${student.lastName}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Georgia, serif; background: white; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 40px; }
+    @media print { body { padding: 0; min-height: unset; } @page { margin: 10mm; size: landscape; } }
+  </style>
+</head>
+<body>
+  <div style="width:100%;max-width:860px;border:3px solid #dc2626;border-radius:4px;padding:0;position:relative;background:white">
+    <!-- Outer decorative border -->
+    <div style="position:absolute;inset:10px;border:1px solid #fca5a5;border-radius:2px;pointer-events:none"></div>
+
+    <div style="padding:60px 72px;text-align:center">
+      <!-- Logo area -->
+      <div style="margin-bottom:28px">
+        <div style="font-size:9pt;font-weight:700;text-transform:uppercase;letter-spacing:0.25em;color:#dc2626;margin-bottom:8px">Dee's Driver Training</div>
+        <div style="width:60px;height:2px;background:#dc2626;margin:0 auto"></div>
+      </div>
+
+      <!-- Title -->
+      <div style="font-size:9pt;font-weight:400;text-transform:uppercase;letter-spacing:0.3em;color:#64748b;margin-bottom:12px">Certificate of Completion</div>
+      <div style="font-size:11pt;font-style:italic;color:#94a3b8;margin-bottom:36px">This is to certify that</div>
+
+      <!-- Name -->
+      <div style="font-size:38pt;font-weight:700;color:#0f172a;font-family:Georgia,serif;line-height:1.1;margin-bottom:8px">
+        ${student.firstName} ${student.lastName}
+      </div>
+      <div style="width:200px;height:1px;background:#e2e8f0;margin:20px auto"></div>
+
+      <!-- Body text -->
+      <div style="font-size:11pt;color:#475569;line-height:1.8;margin-bottom:8px;font-style:italic">
+        has successfully completed the
+      </div>
+      <div style="font-size:16pt;font-weight:700;color:#dc2626;margin-bottom:8px;font-family:Arial,sans-serif;text-transform:uppercase;letter-spacing:0.08em">
+        ${student.package || "Driving Training Programme"}
+      </div>
+      <div style="font-size:11pt;color:#475569;line-height:1.8;margin-bottom:4px;font-style:italic">
+        comprising ${student.lessonsDone} lesson${student.lessonsDone !== 1 ? "s" : ""} of practical driver training
+      </div>
+
+      <!-- Date & signatures -->
+      <div style="margin-top:52px;display:flex;justify-content:space-between;align-items:flex-end;gap:40px">
+        <div style="flex:1;text-align:center">
+          <div style="width:100%;height:1px;background:#cbd5e1;margin-bottom:8px"></div>
+          <div style="font-size:8.5pt;text-transform:uppercase;letter-spacing:0.15em;color:#94a3b8;font-family:Arial,sans-serif">Instructor Signature</div>
+        </div>
+        <div style="flex:0 0 auto;text-align:center">
+          <div style="font-size:28pt;font-weight:900;color:#dc2626;font-family:Georgia,serif;line-height:1">&#9670;</div>
+        </div>
+        <div style="flex:1;text-align:center">
+          <div style="font-size:10pt;font-weight:700;color:#0f172a;margin-bottom:4px;font-family:Arial,sans-serif">${date}</div>
+          <div style="width:100%;height:1px;background:#cbd5e1;margin-bottom:8px"></div>
+          <div style="font-size:8.5pt;text-transform:uppercase;letter-spacing:0.15em;color:#94a3b8;font-family:Arial,sans-serif">Date Issued</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`
+}
+
+// ---------------------------------------------------------------------------
+// Excel export (unchanged)
+// ---------------------------------------------------------------------------
+
 async function exportStudentXLSX(student: Student, sessions: Session[]) {
-  // Dynamically load SheetJS if not present
   if (!(window as unknown as Record<string, unknown>)["XLSX"]) {
     await new Promise<void>((resolve, reject) => {
       const script = document.createElement("script")
@@ -323,47 +326,34 @@ async function exportStudentXLSX(student: Student, sessions: Session[]) {
       document.head.appendChild(script)
     })
   }
-
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const XLSX = (window as any).XLSX
-
   const wb = XLSX.utils.book_new()
 
-  // ── Sheet 1: Student Info ──
   const infoData = [
     ["STUDENT PROFILE", ""],
     [""],
     ["Field", "Value"],
-    ["First Name",       student.firstName],
-    ["Last Name",        student.lastName],
-    ["Email",            student.email],
-    ["Phone",            student.phone],
-    ["Pickup Address",   student.pickupAddress],
-    ["Package",          student.package],
-    ["Payment Status",   student.paid ? "Paid" : "Unpaid"],
-    ["Total Lessons",    student.lessons],
-    ["Lessons Done",     student.lessonsDone],
+    ["First Name",        student.firstName],
+    ["Last Name",         student.lastName],
+    ["Email",             student.email],
+    ["Phone",             student.phone],
+    ["Pickup Address",    student.pickupAddress],
+    ["Package",           student.package],
+    ["Payment Status",    student.paid ? "Paid" : "Unpaid"],
+    ["Total Lessons",     student.lessons],
+    ["Lessons Done",      student.lessonsDone],
     ["Lessons Remaining", Math.max(0, student.lessons - student.lessonsDone)],
-    ["Progress (%)",     student.lessons > 0
-      ? `${Math.round((student.lessonsDone / student.lessons) * 100)}%`
-      : "0%"],
+    ["Progress (%)",      student.lessons > 0 ? `${Math.round((student.lessonsDone / student.lessons) * 100)}%` : "0%"],
     [""],
-    ["Report Generated", new Date().toLocaleDateString("en-ZA", { day: "2-digit", month: "long", year: "numeric" })],
+    ["Report Generated",  new Date().toLocaleDateString("en-ZA", { day: "2-digit", month: "long", year: "numeric" })],
   ]
-
   const infoSheet = XLSX.utils.aoa_to_sheet(infoData)
-
-  // Column widths
   infoSheet["!cols"] = [{ wch: 22 }, { wch: 38 }]
-
-  // Title merge
   infoSheet["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 1 } }]
-
   XLSX.utils.book_append_sheet(wb, infoSheet, "Student Info")
 
-  // ── Sheet 2: Sessions ──
   const sortedSessions = [...sessions].sort((a, b) => a.date.localeCompare(b.date))
-
   const sessionHeaders = ["#", "Date", "Time", "Duration (h)", "Instructor", "Status", "Confirmed"]
   const sessionRows = sortedSessions.map((s, i) => [
     i + 1,
@@ -374,7 +364,6 @@ async function exportStudentXLSX(student: Student, sessions: Session[]) {
     s.confirmed ? "Confirmed" : "Pending",
     s.confirmed ? "Yes" : "No",
   ])
-
   const sessionSummary = [
     [],
     ["Summary", ""],
@@ -383,7 +372,6 @@ async function exportStudentXLSX(student: Student, sessions: Session[]) {
     ["Pending",         sessions.filter(s => !s.confirmed).length],
     ["Total Hours",     sessions.reduce((acc, s) => acc + (parseFloat(s.duration) || 0), 0)],
   ]
-
   const sessionsData = [
     [`SESSIONS — ${student.firstName} ${student.lastName}`],
     [],
@@ -391,17 +379,83 @@ async function exportStudentXLSX(student: Student, sessions: Session[]) {
     ...sessionRows,
     ...sessionSummary,
   ]
-
   const sessSheet = XLSX.utils.aoa_to_sheet(sessionsData)
-  sessSheet["!cols"] = [
-    { wch: 5 }, { wch: 22 }, { wch: 10 }, { wch: 14 },
-    { wch: 22 }, { wch: 14 }, { wch: 12 },
-  ]
-
+  sessSheet["!cols"] = [{ wch: 5 }, { wch: 22 }, { wch: 10 }, { wch: 14 }, { wch: 22 }, { wch: 14 }, { wch: 12 }]
   XLSX.utils.book_append_sheet(wb, sessSheet, "Sessions")
 
   const fileName = `${student.firstName}_${student.lastName}_Report_${new Date().toISOString().split("T")[0]}.xlsx`
   XLSX.writeFile(wb, fileName)
+}
+
+// ---------------------------------------------------------------------------
+// Inline overlay component
+// ---------------------------------------------------------------------------
+
+function PrintOverlay({
+  html,
+  onClose,
+}: {
+  html: string
+  onClose: () => void
+}) {
+  const iframeRef = useRef<HTMLIFrameElement>(null)
+
+  useEffect(() => {
+    const frame = iframeRef.current
+    if (!frame) return
+    frame.onload = () => {
+      // Make sure content is fully written before allowing print
+    }
+    const doc = frame.contentDocument || frame.contentWindow?.document
+    if (doc) {
+      doc.open()
+      doc.write(html)
+      doc.close()
+    }
+  }, [html])
+
+  function handlePrint() {
+    iframeRef.current?.contentWindow?.print()
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex flex-col"
+      style={{ background: "rgba(15,23,42,0.7)", backdropFilter: "blur(4px)" }}
+    >
+      {/* Toolbar */}
+      <div className="flex items-center justify-between px-4 py-2.5 bg-slate-900 border-b border-slate-700 shrink-0">
+        <span className="text-[10px] font-black uppercase tracking-widest text-slate-400">Preview</span>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handlePrint}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all"
+          >
+            <Printer className="h-3.5 w-3.5" />
+            Print / Save PDF
+          </button>
+          <button
+            onClick={onClose}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-700 text-slate-200 text-[10px] font-black uppercase tracking-widest hover:bg-slate-600 transition-all"
+          >
+            <X className="h-3.5 w-3.5" />
+            Close
+          </button>
+        </div>
+      </div>
+
+      {/* iframe */}
+      <div className="flex-1 overflow-auto bg-slate-200 p-4">
+        <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-2xl overflow-hidden" style={{ minHeight: "80vh" }}>
+          <iframe
+            ref={iframeRef}
+            title="print-preview"
+            style={{ width: "100%", height: "100%", minHeight: "80vh", border: "none", display: "block" }}
+          />
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // ---------------------------------------------------------------------------
@@ -493,8 +547,9 @@ export default function StudentsPage() {
   const [addingSession, setAddingSession]   = useState(false)
   const [newSession, setNewSession]         = useState<Partial<Session>>({})
 
-  // export state
-  const [exporting, setExporting] = useState(false)
+  // export
+  const [exporting, setExporting]   = useState(false)
+  const [overlayHTML, setOverlayHTML] = useState<string | null>(null)
 
   // ── Load students ──
   const loadStudents = useCallback(async () => {
@@ -571,7 +626,7 @@ export default function StudentsPage() {
       if (sessionDraft.date           !== undefined) fields["Date"]            = sessionDraft.date
       if (sessionDraft.time           !== undefined) fields["Time"]            = sessionDraft.time
       if (sessionDraft.duration       !== undefined) fields["Duration"]        = sessionDraft.duration
-      if (sessionDraft.confirmed !== undefined) fields["Confirmed"] = sessionDraft.confirmed ? true : false
+      if (sessionDraft.confirmed      !== undefined) fields["Confirmed"]       = sessionDraft.confirmed ? true : false
       if (sessionDraft.instructorName !== undefined) fields["Instructor Name"] = sessionDraft.instructorName
       await api.sessions.patch(id, fields)
       setSessions(prev => prev.map(s => s.id === id ? { ...s, ...sessionDraft } as Session : s))
@@ -620,7 +675,7 @@ export default function StudentsPage() {
         "Time":            newSession.time            ?? "",
         "Duration":        newSession.duration        ?? "",
         "Instructor Name": newSession.instructorName  ?? "",
-        "Confirmed": newSession.confirmed ? true : false,
+        "Confirmed":       newSession.confirmed ? true : false,
       }
       const rec = await api.sessions.create(fields)
       setSessions(prev => [...prev, mapSession(rec)])
@@ -671,30 +726,20 @@ export default function StudentsPage() {
             <span className="hidden sm:inline">Delete</span>
           </button>
 
-          {/* Certificate */}
+          {/* Certificate — now inline */}
           <button
-            onClick={() => {
-              const params = new URLSearchParams({
-                firstName: selected.firstName,
-                lastName:  selected.lastName,
-                package:   selected.package,
-                lessons:   String(selected.lessonsDone),
-                date:      new Date().toISOString().split("T")[0],
-              })
-              window.open(`/api/certificate?${params}`, "_blank")
-            }}
+            onClick={() => setOverlayHTML(buildCertificateHTML(selected))}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-[10px] font-black uppercase tracking-widest hover:bg-amber-100 transition-all shrink-0"
           >
             <ScrollText className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Certificate</span>
           </button>
 
-          {/* Print report */}
+          {/* Print report — now inline */}
           <button
-            onClick={() => sessLoading ? undefined : printStudentReport(selected, sessions)}
+            onClick={() => !sessLoading && setOverlayHTML(buildReportHTML(selected, sessions))}
             disabled={sessLoading}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all shrink-0 disabled:opacity-50"
-            title="Print / Save as PDF"
           >
             <Printer className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Print</span>
@@ -705,21 +750,14 @@ export default function StudentsPage() {
             onClick={async () => {
               if (sessLoading || exporting) return
               setExporting(true)
-              try {
-                await exportStudentXLSX(selected, sessions)
-              } catch (e) {
-                alert("Export failed: " + String(e))
-              } finally {
-                setExporting(false)
-              }
+              try { await exportStudentXLSX(selected, sessions) }
+              catch (e) { alert("Export failed: " + String(e)) }
+              finally { setExporting(false) }
             }}
             disabled={sessLoading || exporting}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-all shrink-0 disabled:opacity-50"
-            title="Download Excel spreadsheet"
           >
-            {exporting
-              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              : <FileSpreadsheet className="h-3.5 w-3.5" />}
+            {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileSpreadsheet className="h-3.5 w-3.5" />}
             <span className="hidden sm:inline">{exporting ? "Exporting…" : "Excel"}</span>
           </button>
 
@@ -978,6 +1016,11 @@ export default function StudentsPage() {
   return (
     <div className="min-h-screen bg-slate-50 font-sans">
 
+      {/* Inline print/certificate overlay */}
+      {overlayHTML && (
+        <PrintOverlay html={overlayHTML} onClose={() => setOverlayHTML(null)} />
+      )}
+
       {/* Header */}
       <div className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur px-4 md:px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -1005,12 +1048,10 @@ export default function StudentsPage() {
         </button>
       </div>
 
-      {/* ── MOBILE: full-screen list OR full-screen detail ── */}
+      {/* ── MOBILE ── */}
       <div className="md:hidden">
         {selected ? (
-          <div className="min-h-[calc(100vh-65px)]">
-            {detailPanel}
-          </div>
+          <div className="min-h-[calc(100vh-65px)]">{detailPanel}</div>
         ) : (
           <div className="flex flex-col">
             <div className="p-4 border-b border-slate-100 bg-white">
@@ -1073,10 +1114,8 @@ export default function StudentsPage() {
         )}
       </div>
 
-      {/* ── DESKTOP: side-by-side layout ── */}
+      {/* ── DESKTOP ── */}
       <div className="hidden md:flex h-[calc(100vh-65px)]">
-
-        {/* Left: student list */}
         <div className={`flex flex-col border-r border-slate-200 bg-white transition-all duration-300 ${selected ? "w-80 shrink-0" : "flex-1"}`}>
           <div className="p-4 border-b border-slate-100">
             <div className="relative">
@@ -1090,7 +1129,7 @@ export default function StudentsPage() {
               />
             </div>
           </div>
-          <div className="px-4 py-2 flex items-center justify-between">
+          <div className="px-4 py-2">
             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
               {filtered.length} student{filtered.length !== 1 ? "s" : ""}
             </p>
@@ -1137,7 +1176,6 @@ export default function StudentsPage() {
           </div>
         </div>
 
-        {/* Right: detail panel */}
         {selected ? detailPanel : (
           !loading && students.length > 0 && (
             <div className="flex flex-1 items-center justify-center flex-col gap-3 text-slate-300">
