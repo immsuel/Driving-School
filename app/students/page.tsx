@@ -6,6 +6,7 @@ import {
   AlertCircle, User, Phone, Mail, MapPin, Package,
   CalendarDays, Clock, Edit3, Save, Plus, Trash2,
   ArrowLeft, BookOpen, BadgeCheck, RefreshCw, ScrollText,
+  Printer, FileSpreadsheet,
 } from "lucide-react"
 
 // ---------------------------------------------------------------------------
@@ -119,6 +120,291 @@ function mapSession(r: { id: string; fields: Record<string, unknown> }): Session
 }
 
 // ---------------------------------------------------------------------------
+// Export helpers
+// ---------------------------------------------------------------------------
+
+function formatDateDisplay(dateStr: string) {
+  if (!dateStr) return "—"
+  try {
+    return new Date(dateStr + "T00:00:00").toLocaleDateString("en-ZA", {
+      weekday: "short", day: "2-digit", month: "short", year: "numeric",
+    })
+  } catch {
+    return dateStr
+  }
+}
+
+function printStudentReport(student: Student, sessions: Session[]) {
+  const sortedSessions = [...sessions].sort((a, b) => a.date.localeCompare(b.date))
+  const completedSessions = sortedSessions.filter(s => s.confirmed).length
+  const progressPct = student.lessons > 0
+    ? Math.min(100, Math.round((student.lessonsDone / student.lessons) * 100))
+    : 0
+
+  const sessionRows = sortedSessions.map((s, i) => `
+    <tr class="${i % 2 === 0 ? "row-even" : "row-odd"}">
+      <td>${i + 1}</td>
+      <td>${formatDateDisplay(s.date)}</td>
+      <td>${s.time || "—"}</td>
+      <td>${s.duration ? s.duration + "h" : "—"}</td>
+      <td>${s.instructorName || "—"}</td>
+      <td><span class="badge ${s.confirmed ? "badge-confirmed" : "badge-pending"}">${s.confirmed ? "Confirmed" : "Pending"}</span></td>
+    </tr>
+  `).join("")
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Student Report — ${student.firstName} ${student.lastName}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; font-size: 11pt; color: #1e293b; background: white; padding: 24px 32px; }
+
+    .header { display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #dc2626; padding-bottom: 16px; margin-bottom: 24px; }
+    .header-left { display: flex; flex-direction: column; gap: 2px; }
+    .company { font-size: 9pt; font-weight: 900; text-transform: uppercase; letter-spacing: 0.15em; color: #dc2626; }
+    .report-title { font-size: 18pt; font-weight: 900; color: #0f172a; }
+    .report-date { font-size: 8pt; color: #94a3b8; font-weight: bold; margin-top: 2px; }
+    .header-right { text-align: right; }
+    .student-initials { width: 52px; height: 52px; background: #fee2e2; color: #dc2626; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 16pt; font-weight: 900; }
+
+    .section { margin-bottom: 28px; }
+    .section-title { font-size: 8pt; font-weight: 900; text-transform: uppercase; letter-spacing: 0.15em; color: #64748b; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px; margin-bottom: 14px; }
+
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+    .info-item { display: flex; flex-direction: column; gap: 2px; }
+    .info-label { font-size: 7.5pt; font-weight: 900; text-transform: uppercase; letter-spacing: 0.12em; color: #94a3b8; }
+    .info-value { font-size: 10.5pt; font-weight: 700; color: #1e293b; }
+    .info-value.paid { color: #16a34a; }
+    .info-value.unpaid { color: #94a3b8; }
+
+    .progress-bar-outer { height: 8px; background: #f1f5f9; border-radius: 99px; overflow: hidden; margin-top: 4px; }
+    .progress-bar-inner { height: 100%; background: #dc2626; border-radius: 99px; }
+    .progress-label { font-size: 8pt; font-weight: 900; color: #64748b; margin-top: 4px; }
+
+    .stats-row { display: flex; gap: 16px; margin-bottom: 20px; }
+    .stat-card { flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; }
+    .stat-value { font-size: 20pt; font-weight: 900; color: #0f172a; }
+    .stat-label { font-size: 7.5pt; font-weight: 900; text-transform: uppercase; letter-spacing: 0.12em; color: #94a3b8; margin-top: 2px; }
+    .stat-card.accent { background: #fef2f2; border-color: #fecaca; }
+    .stat-card.accent .stat-value { color: #dc2626; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+    thead tr { background: #0f172a; color: white; }
+    thead th { padding: 9px 12px; text-align: left; font-size: 8pt; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; }
+    tbody tr.row-even { background: white; }
+    tbody tr.row-odd { background: #f8fafc; }
+    tbody td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; color: #334155; font-weight: 600; }
+
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 8pt; font-weight: 900; text-transform: uppercase; letter-spacing: 0.08em; }
+    .badge-confirmed { background: #dcfce7; color: #16a34a; }
+    .badge-pending { background: #fef3c7; color: #d97706; }
+
+    .footer { margin-top: 32px; padding-top: 12px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 8pt; color: #94a3b8; font-weight: bold; }
+
+    @media print {
+      body { padding: 0; }
+      @page { margin: 18mm 20mm; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <div class="header-left">
+      <span class="company">Dee's Driver Training</span>
+      <span class="report-title">${student.firstName} ${student.lastName}</span>
+      <span class="report-date">Generated ${new Date().toLocaleDateString("en-ZA", { day: "2-digit", month: "long", year: "numeric" })}</span>
+    </div>
+    <div class="header-right">
+      <div class="student-initials" style="display:inline-flex">${(student.firstName[0] ?? "") + (student.lastName[0] ?? "")}</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Student Information</div>
+    <div class="info-grid">
+      <div class="info-item">
+        <span class="info-label">Email</span>
+        <span class="info-value">${student.email || "—"}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Phone</span>
+        <span class="info-value">${student.phone || "—"}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Package</span>
+        <span class="info-value">${student.package || "—"}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Pickup Address</span>
+        <span class="info-value">${student.pickupAddress || "—"}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Payment Status</span>
+        <span class="info-value ${student.paid ? "paid" : "unpaid"}">${student.paid ? "✓ Paid" : "Unpaid"}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Lesson Progress</span>
+        <div class="progress-bar-outer"><div class="progress-bar-inner" style="width:${progressPct}%"></div></div>
+        <span class="progress-label">${student.lessonsDone} of ${student.lessons} lessons done (${progressPct}%)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Session Summary</div>
+    <div class="stats-row">
+      <div class="stat-card accent">
+        <div class="stat-value">${sessions.length}</div>
+        <div class="stat-label">Total Sessions</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${completedSessions}</div>
+        <div class="stat-label">Confirmed</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${sessions.length - completedSessions}</div>
+        <div class="stat-label">Pending</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">${sessions.reduce((acc, s) => acc + (parseFloat(s.duration) || 0), 0)}h</div>
+        <div class="stat-label">Total Hours</div>
+      </div>
+    </div>
+  </div>
+
+  ${sessions.length > 0 ? `
+  <div class="section">
+    <div class="section-title">Sessions (${sessions.length})</div>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Date</th>
+          <th>Time</th>
+          <th>Duration</th>
+          <th>Instructor</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${sessionRows}
+      </tbody>
+    </table>
+  </div>
+  ` : `<div class="section"><div class="section-title">Sessions</div><p style="color:#94a3b8;font-style:italic;font-size:10pt">No sessions recorded.</p></div>`}
+
+  <div class="footer">
+    <span>Dee's Driver Training — Student Report</span>
+    <span>${student.firstName} ${student.lastName} · ${student.package || "No package"}</span>
+  </div>
+
+  <script>window.onload = () => window.print()</script>
+</body>
+</html>`
+
+  const win = window.open("", "_blank")
+  if (win) {
+    win.document.write(html)
+    win.document.close()
+  }
+}
+
+async function exportStudentXLSX(student: Student, sessions: Session[]) {
+  // Dynamically load SheetJS if not present
+  if (!(window as unknown as Record<string, unknown>)["XLSX"]) {
+    await new Promise<void>((resolve, reject) => {
+      const script = document.createElement("script")
+      script.src = "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"
+      script.onload = () => resolve()
+      script.onerror = () => reject(new Error("Failed to load SheetJS"))
+      document.head.appendChild(script)
+    })
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const XLSX = (window as any).XLSX
+
+  const wb = XLSX.utils.book_new()
+
+  // ── Sheet 1: Student Info ──
+  const infoData = [
+    ["STUDENT PROFILE", ""],
+    [""],
+    ["Field", "Value"],
+    ["First Name",       student.firstName],
+    ["Last Name",        student.lastName],
+    ["Email",            student.email],
+    ["Phone",            student.phone],
+    ["Pickup Address",   student.pickupAddress],
+    ["Package",          student.package],
+    ["Payment Status",   student.paid ? "Paid" : "Unpaid"],
+    ["Total Lessons",    student.lessons],
+    ["Lessons Done",     student.lessonsDone],
+    ["Lessons Remaining", Math.max(0, student.lessons - student.lessonsDone)],
+    ["Progress (%)",     student.lessons > 0
+      ? `${Math.round((student.lessonsDone / student.lessons) * 100)}%`
+      : "0%"],
+    [""],
+    ["Report Generated", new Date().toLocaleDateString("en-ZA", { day: "2-digit", month: "long", year: "numeric" })],
+  ]
+
+  const infoSheet = XLSX.utils.aoa_to_sheet(infoData)
+
+  // Column widths
+  infoSheet["!cols"] = [{ wch: 22 }, { wch: 38 }]
+
+  // Title merge
+  infoSheet["!merges"] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 1 } }]
+
+  XLSX.utils.book_append_sheet(wb, infoSheet, "Student Info")
+
+  // ── Sheet 2: Sessions ──
+  const sortedSessions = [...sessions].sort((a, b) => a.date.localeCompare(b.date))
+
+  const sessionHeaders = ["#", "Date", "Time", "Duration (h)", "Instructor", "Status", "Confirmed"]
+  const sessionRows = sortedSessions.map((s, i) => [
+    i + 1,
+    s.date ? formatDateDisplay(s.date) : "—",
+    s.time || "—",
+    s.duration ? parseFloat(s.duration) : "—",
+    s.instructorName || "—",
+    s.confirmed ? "Confirmed" : "Pending",
+    s.confirmed ? "Yes" : "No",
+  ])
+
+  const sessionSummary = [
+    [],
+    ["Summary", ""],
+    ["Total Sessions",  sessions.length],
+    ["Confirmed",       sessions.filter(s => s.confirmed).length],
+    ["Pending",         sessions.filter(s => !s.confirmed).length],
+    ["Total Hours",     sessions.reduce((acc, s) => acc + (parseFloat(s.duration) || 0), 0)],
+  ]
+
+  const sessionsData = [
+    [`SESSIONS — ${student.firstName} ${student.lastName}`],
+    [],
+    sessionHeaders,
+    ...sessionRows,
+    ...sessionSummary,
+  ]
+
+  const sessSheet = XLSX.utils.aoa_to_sheet(sessionsData)
+  sessSheet["!cols"] = [
+    { wch: 5 }, { wch: 22 }, { wch: 10 }, { wch: 14 },
+    { wch: 22 }, { wch: 14 }, { wch: 12 },
+  ]
+
+  XLSX.utils.book_append_sheet(wb, sessSheet, "Sessions")
+
+  const fileName = `${student.firstName}_${student.lastName}_Report_${new Date().toISOString().split("T")[0]}.xlsx`
+  XLSX.writeFile(wb, fileName)
+}
+
+// ---------------------------------------------------------------------------
 // UI helpers
 // ---------------------------------------------------------------------------
 
@@ -206,6 +492,9 @@ export default function StudentsPage() {
   const [sessioning, setSessioning]         = useState(false)
   const [addingSession, setAddingSession]   = useState(false)
   const [newSession, setNewSession]         = useState<Partial<Session>>({})
+
+  // export state
+  const [exporting, setExporting] = useState(false)
 
   // ── Load students ──
   const loadStudents = useCallback(async () => {
@@ -306,18 +595,18 @@ export default function StudentsPage() {
     }
   }
 
-  // delete student
+  // ── Delete student ──
   async function deleteStudent(id: string) {
-  if (!confirm("Permanently delete this student profile? This cannot be undone.")) return
-  try {
-    await apiMutate(`/api/students?id=${id}`, "DELETE")
-    setStudents(prev => prev.filter(s => s.id !== id))
-    setSelected(null)
-    setSessions([])
-  } catch (e) {
-    alert(String(e))
+    if (!confirm("Permanently delete this student profile? This cannot be undone.")) return
+    try {
+      await apiMutate(`/api/students?id=${id}`, "DELETE")
+      setStudents(prev => prev.filter(s => s.id !== id))
+      setSelected(null)
+      setSessions([])
+    } catch (e) {
+      alert(String(e))
+    }
   }
-}
 
   // ── Add session ──
   async function addSession() {
@@ -355,13 +644,13 @@ export default function StudentsPage() {
     )
   })
 
-  // ── Detail panel (shared between mobile full-screen and desktop side panel) ──
+  // ── Detail panel ──
   const detailPanel = selected ? (
     <div className="flex-1 overflow-y-auto bg-slate-50">
       <div className="max-w-2xl mx-auto p-4 md:p-6 space-y-6">
 
         {/* Back + title */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={goBack}
             className="h-8 w-8 rounded-xl bg-white border border-slate-200 flex items-center justify-center text-slate-500 hover:text-red-600 hover:border-red-200 transition-all shadow-sm"
@@ -373,6 +662,7 @@ export default function StudentsPage() {
             <h2 className="text-lg font-black text-slate-800 leading-tight truncate">{selected.firstName} {selected.lastName}</h2>
           </div>
 
+          {/* Delete */}
           <button
             onClick={() => deleteStudent(selected.id)}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 border border-red-200 text-red-600 text-[10px] font-black uppercase tracking-widest hover:bg-red-100 transition-all shrink-0"
@@ -381,6 +671,7 @@ export default function StudentsPage() {
             <span className="hidden sm:inline">Delete</span>
           </button>
 
+          {/* Certificate */}
           <button
             onClick={() => {
               const params = new URLSearchParams({
@@ -397,6 +688,41 @@ export default function StudentsPage() {
             <ScrollText className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Certificate</span>
           </button>
+
+          {/* Print report */}
+          <button
+            onClick={() => sessLoading ? undefined : printStudentReport(selected, sessions)}
+            disabled={sessLoading}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition-all shrink-0 disabled:opacity-50"
+            title="Print / Save as PDF"
+          >
+            <Printer className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Print</span>
+          </button>
+
+          {/* Excel export */}
+          <button
+            onClick={async () => {
+              if (sessLoading || exporting) return
+              setExporting(true)
+              try {
+                await exportStudentXLSX(selected, sessions)
+              } catch (e) {
+                alert("Export failed: " + String(e))
+              } finally {
+                setExporting(false)
+              }
+            }}
+            disabled={sessLoading || exporting}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-black uppercase tracking-widest hover:bg-emerald-100 transition-all shrink-0 disabled:opacity-50"
+            title="Download Excel spreadsheet"
+          >
+            {exporting
+              ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              : <FileSpreadsheet className="h-3.5 w-3.5" />}
+            <span className="hidden sm:inline">{exporting ? "Exporting…" : "Excel"}</span>
+          </button>
+
           <Avatar name={`${selected.firstName} ${selected.lastName}`} size="lg" />
         </div>
 
@@ -655,22 +981,22 @@ export default function StudentsPage() {
       {/* Header */}
       <div className="sticky top-0 z-20 border-b border-slate-200 bg-white/90 backdrop-blur px-4 md:px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-        <button
-          onClick={() => window.location.href = "/admin"}
-          className="h-8 w-8 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-all"
-          title="Back to Admin"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </button>
-        <img
-          src="https://driving-school-gold.vercel.app/DEES-DRIVER-TRAINING-LOGO.png"
-          alt="Dees Driver Training"
-          className="h-10 w-auto object-contain"
-        />
-        <div className="border-l border-slate-200 pl-3">
-          <h1 className="text-xl font-black text-slate-800 leading-tight">Students</h1>
+          <button
+            onClick={() => window.location.href = "/admin"}
+            className="h-8 w-8 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 hover:text-red-600 hover:border-red-200 hover:bg-red-50 transition-all"
+            title="Back to Admin"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <img
+            src="https://driving-school-gold.vercel.app/DEES-DRIVER-TRAINING-LOGO.png"
+            alt="Dees Driver Training"
+            className="h-10 w-auto object-contain"
+          />
+          <div className="border-l border-slate-200 pl-3">
+            <h1 className="text-xl font-black text-slate-800 leading-tight">Students</h1>
+          </div>
         </div>
-      </div>
         <button
           onClick={loadStudents}
           className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-red-600 transition-colors"
@@ -682,12 +1008,10 @@ export default function StudentsPage() {
       {/* ── MOBILE: full-screen list OR full-screen detail ── */}
       <div className="md:hidden">
         {selected ? (
-          // Full-screen detail on mobile
           <div className="min-h-[calc(100vh-65px)]">
             {detailPanel}
           </div>
         ) : (
-          // Full-screen list on mobile
           <div className="flex flex-col">
             <div className="p-4 border-b border-slate-100 bg-white">
               <div className="relative">
