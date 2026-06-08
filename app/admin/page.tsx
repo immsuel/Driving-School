@@ -8,7 +8,7 @@ import {
   CreditCard, Banknote, Smartphone, Wallet, X, CalendarDays,
   User, Phone, Mail, MapPin, Car, Clock, ChevronRight,
   RotateCcw, Zap, RefreshCw, Search, BadgeCheck, Receipt, Users,
-  MessageCircle, MessageSquare, LogOut,
+  MessageCircle, MessageSquare, LogOut, GraduationCap,
 } from "lucide-react"
 
 import { getAvailableSlots, getBatchAvailability } from "@/app/actions/instructors"
@@ -725,6 +725,15 @@ export default function AdminBookingPage() {
             >
               <Users className="h-3 w-3 shrink-0" />
               <span className="hidden sm:inline">Students</span>
+            </a>
+
+            {/* Instructors link */}
+            <a
+              href="/instructors"
+              className="flex items-center gap-1.5 h-8 px-2.5 sm:px-3 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 text-[10px] font-black uppercase tracking-widest transition-all border border-red-200"
+            >
+              <GraduationCap className="h-3 w-3 shrink-0" />
+              <span className="hidden sm:inline">Instructors</span>
             </a>
 
             {/* Reset */}
