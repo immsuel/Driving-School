@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback } from "react"
 import {
   Printer, ChevronLeft, ChevronRight, Loader2, RefreshCw,
   Phone, Clock, Calendar, AlertCircle, Users,
-  CheckCircle2, BookOpen,
+  CheckCircle2, BookOpen, ArrowLeft,
 } from "lucide-react"
 
 // ---------------------------------------------------------------------------
@@ -378,11 +378,19 @@ export default function InstructorsPage() {
 
         {/* Header */}
         <div className="flex items-center justify-between gap-4">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Dees Driver Training</p>
-            <h1 className="text-2xl font-black text-slate-900 mt-0.5 flex items-center gap-2">
-              <Users className="h-5 w-5 text-red-500" />Instructors
-            </h1>
+          <div className="flex items-center gap-3">
+            <a
+              href="/admin"
+              className="h-9 w-9 rounded-xl border border-slate-200 bg-white flex items-center justify-center text-slate-400 hover:text-red-500 hover:border-red-200 transition-all"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+            </a>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Dees Driver Training</p>
+              <h1 className="text-2xl font-black text-slate-900 mt-0.5 flex items-center gap-2">
+                <Users className="h-5 w-5 text-red-500" />Instructors
+              </h1>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <button
