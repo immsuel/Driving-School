@@ -8,7 +8,8 @@ import {
   CreditCard, Banknote, Smartphone, Wallet, X, CalendarDays,
   User, Phone, Mail, MapPin, Car, Clock, ChevronRight,
   RotateCcw, Zap, RefreshCw, Search, BadgeCheck, Receipt, Users,
-  MessageCircle, MessageSquare, LogOut, GraduationCap,
+  MessageCircle, MessageSquare, LogOut, GraduationCap, History,
+  ChevronDown, ChevronUp, WifiOff,
 } from "lucide-react"
 
 import { getAvailableSlots, getBatchAvailability } from "@/app/actions/instructors"
@@ -52,8 +53,6 @@ const PAYMENT_METHODS = [
 
 const CONTACT_METHODS = [
   { id: "whatsapp", label: "WhatsApp", icon: MessageCircle },
- // { id: "sms",      label: "SMS",      icon: MessageSquare },
- // { id: "email",    label: "Email",    icon: Mail }
 ]
 
 const MIN_HOURS = 2
@@ -119,6 +118,43 @@ interface StudentForm {
 }
 
 // ---------------------------------------------------------------------------
+// Recent bookings type — stored in localStorage
+// ---------------------------------------------------------------------------
+interface RecentBookingRecord {
+  id: string
+  ref: string
+  studentName: string
+  vehicle: Vehicle
+  hours: number
+  sessions: Array<{ date: string; time: string; duration: number }>
+  addons: string[]
+  paymentMethod: string
+  grandTotal: number
+  assignedInstructor: AssignedInstructor | null
+  student: StudentForm
+  bookedAt: string // ISO timestamp
+  // The raw API payload for retry
+  payload: Record<string, unknown>
+}
+
+const RECENT_BOOKINGS_KEY = "dees_recent_bookings"
+const MAX_RECENT = 10
+
+function loadRecentBookings(): RecentBookingRecord[] {
+  try {
+    const raw = localStorage.getItem(RECENT_BOOKINGS_KEY)
+    if (!raw) return []
+    return JSON.parse(raw) as RecentBookingRecord[]
+  } catch { return [] }
+}
+
+function saveRecentBookings(bookings: RecentBookingRecord[]) {
+  try {
+    localStorage.setItem(RECENT_BOOKINGS_KEY, JSON.stringify(bookings.slice(0, MAX_RECENT)))
+  } catch {}
+}
+
+// ---------------------------------------------------------------------------
 // Print receipt
 // ---------------------------------------------------------------------------
 
@@ -141,7 +177,10 @@ function triggerPrint(params: {
     .join("")
 
   const sessionLines = sessions
-    .map((s, i) => `<tr><td>#${i + 1}</td><td>${fmtDate(s.date)}</td><td>${s.time}</td><td>${s.duration}h</td></tr>`)
+    .map((s, i) => {
+      const dateObj = s.date instanceof Date ? s.date : new Date(s.date)
+      return `<tr><td>#${i + 1}</td><td>${fmtDate(dateObj)}</td><td>${s.time}</td><td>${s.duration}h</td></tr>`
+    })
     .join("")
 
   const contactLabel = CONTACT_METHODS.find(c => c.id === student.contactMethod)?.label ?? "—"
@@ -155,65 +194,16 @@ function triggerPrint(params: {
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body {
-    font-family: 'IBM Plex Sans', sans-serif;
-    font-size: 12px;
-    color: #111;
-    background: #fff;
-    padding: 32px 40px;
-    max-width: 720px;
-    margin: 0 auto;
-  }
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding-bottom: 20px;
-    border-bottom: 2px solid #111;
-    margin-bottom: 24px;
-  }
-  .logo-block h1 {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 18px;
-    font-weight: 700;
-    letter-spacing: -0.5px;
-    text-transform: uppercase;
-  }
-  .logo-block p {
-    font-size: 10px;
-    color: #666;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-top: 2px;
-  }
+  body { font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; color: #111; background: #fff; padding: 32px 40px; max-width: 720px; margin: 0 auto; }
+  .header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 20px; border-bottom: 2px solid #111; margin-bottom: 24px; }
+  .logo-block h1 { font-family: 'IBM Plex Mono', monospace; font-size: 18px; font-weight: 700; letter-spacing: -0.5px; text-transform: uppercase; }
+  .logo-block p { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
   .ref-block { text-align: right; }
-  .ref-block .ref-label {
-    font-size: 9px;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: #888;
-    margin-bottom: 3px;
-  }
-  .ref-block .ref-code {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 22px;
-    font-weight: 700;
-    letter-spacing: 2px;
-    color: #111;
-  }
+  .ref-block .ref-label { font-size: 9px; text-transform: uppercase; letter-spacing: 1.5px; color: #888; margin-bottom: 3px; }
+  .ref-block .ref-code { font-family: 'IBM Plex Mono', monospace; font-size: 22px; font-weight: 700; letter-spacing: 2px; color: #111; }
   .ref-block .ref-date { font-size: 10px; color: #888; margin-top: 3px; }
   .section { margin-bottom: 22px; }
-  .section-title {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 9px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    color: #888;
-    border-bottom: 1px solid #e5e5e5;
-    padding-bottom: 5px;
-    margin-bottom: 10px;
-  }
+  .section-title { font-family: 'IBM Plex Mono', monospace; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #888; border-bottom: 1px solid #e5e5e5; padding-bottom: 5px; margin-bottom: 10px; }
   .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 24px; }
   .field label { display: block; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #aaa; margin-bottom: 1px; }
   .field span { font-size: 12px; font-weight: 600; color: #111; }
@@ -240,7 +230,6 @@ function triggerPrint(params: {
     <div class="ref-date">${new Date().toLocaleDateString("en-ZA", { day: "2-digit", month: "long", year: "numeric" })}</div>
   </div>
 </div>
-
 <div class="section">
   <div class="section-title">Student Information</div>
   <div class="grid-2">
@@ -251,7 +240,6 @@ function triggerPrint(params: {
     <div class="field"><label>Preferred Contact</label><span>${contactLabel}</span></div>
   </div>
 </div>
-
 <div class="section">
   <div class="section-title">Course Details</div>
   <div class="grid-2">
@@ -261,7 +249,6 @@ function triggerPrint(params: {
     <div class="field"><label>Payment Method</label><span>${paymentLabel}</span></div>
   </div>
 </div>
-
 ${assignedInstructor ? `
 <div class="section">
   <div class="section-title">Assigned Instructor</div>
@@ -270,7 +257,6 @@ ${assignedInstructor ? `
     <div class="field"><label>Contact</label><span>${assignedInstructor.phone}</span></div>
   </div>
 </div>` : ""}
-
 <div class="section">
   <div class="section-title">Scheduled Sessions</div>
   <table>
@@ -278,7 +264,6 @@ ${assignedInstructor ? `
     <tbody>${sessionLines}</tbody>
   </table>
 </div>
-
 <div class="section">
   <div class="section-title">Pricing</div>
   <table class="totals-table">
@@ -289,7 +274,6 @@ ${assignedInstructor ? `
     </tbody>
   </table>
 </div>
-
 <div class="footer">
   <span>Dees Driver Training · Durban</span>
   <span>Printed ${new Date().toLocaleString("en-ZA")}</span>
@@ -364,6 +348,166 @@ function AdminInput({ value, onChange, placeholder, type = "text", onBlur }: {
 }
 
 // ---------------------------------------------------------------------------
+// RecentBookingsPanel
+// ---------------------------------------------------------------------------
+
+function RecentBookingsPanel({
+  bookings,
+  onRetry,
+  onRemove,
+  onClearAll,
+  retryingId,
+}: {
+  bookings: RecentBookingRecord[]
+  onRetry: (b: RecentBookingRecord) => void
+  onRemove: (id: string) => void
+  onClearAll: () => void
+  retryingId: string | null
+}) {
+  const [expanded, setExpanded] = useState(true)
+  const [expandedItem, setExpandedItem] = useState<string | null>(null)
+
+  if (bookings.length === 0) return null
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      {/* Header */}
+      <button
+        onClick={() => setExpanded(v => !v)}
+        className="w-full flex items-center gap-3 px-4 sm:px-5 py-4 border-b border-slate-100 hover:bg-slate-50 transition-colors"
+      >
+        <div className="h-7 w-7 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
+          <History className="h-3.5 w-3.5 text-amber-500" />
+        </div>
+        <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500 flex-1 text-left">
+          Recent Bookings
+        </p>
+        <span className="h-5 min-w-[20px] px-1.5 rounded-full bg-amber-100 text-amber-700 text-[9px] font-black flex items-center justify-center">
+          {bookings.length}
+        </span>
+        {expanded
+          ? <ChevronUp className="h-3.5 w-3.5 text-slate-400" />
+          : <ChevronDown className="h-3.5 w-3.5 text-slate-400" />}
+      </button>
+
+      {expanded && (
+        <div className="divide-y divide-slate-50">
+          {bookings.map(b => {
+            const isRetrying = retryingId === b.id
+            const isOpen = expandedItem === b.id
+            const bookedDate = new Date(b.bookedAt)
+            const timeAgo = (() => {
+              const diff = Date.now() - bookedDate.getTime()
+              const mins = Math.floor(diff / 60000)
+              if (mins < 1) return "just now"
+              if (mins < 60) return `${mins}m ago`
+              const hrs = Math.floor(mins / 60)
+              if (hrs < 24) return `${hrs}h ago`
+              return bookedDate.toLocaleDateString("en-ZA", { day: "2-digit", month: "short" })
+            })()
+
+            return (
+              <div key={b.id} className="p-3 sm:p-4 space-y-2.5">
+                {/* Row: ref + name + time */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono text-[11px] font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 rounded">{b.ref}</span>
+                      <span className="text-[10px] text-slate-400 font-bold">{timeAgo}</span>
+                    </div>
+                    <p className="text-[12px] font-black text-slate-800 mt-0.5">{b.studentName}</p>
+                    <p className="text-[10px] text-slate-400 font-bold">{b.vehicle.label} · {b.hours}h · R{b.grandTotal.toLocaleString("en-ZA")}</p>
+                  </div>
+                  <button
+                    onClick={() => onRemove(b.id)}
+                    className="h-6 w-6 rounded-md bg-slate-100 flex items-center justify-center text-slate-400 hover:text-red-400 hover:bg-red-50 transition-all shrink-0 mt-0.5"
+                    title="Remove from recent"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+
+                {/* Sessions preview toggle */}
+                <button
+                  onClick={() => setExpandedItem(isOpen ? null : b.id)}
+                  className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  {isOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                  {b.sessions.length} session{b.sessions.length !== 1 ? "s" : ""}
+                </button>
+
+                {isOpen && (
+                  <div className="space-y-1 pl-1">
+                    {b.sessions.map((s, i) => {
+                      const d = new Date(s.date)
+                      return (
+                        <div key={i} className="flex items-center gap-2 text-[10px] font-bold text-slate-500">
+                          <div className="h-1 w-1 rounded-full bg-slate-300 shrink-0" />
+                          <span>{fmtDate(d)}</span>
+                          <span className="text-slate-400">{s.time} · {s.duration}h</span>
+                        </div>
+                      )
+                    })}
+                    <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 pt-0.5">
+                      <span>Payment: {PAYMENT_METHODS.find(m => m.id === b.paymentMethod)?.label ?? "—"}</span>
+                    </div>
+                    {b.student.phone && (
+                      <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400">
+                        <span>📱 {b.student.phone}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex gap-2 pt-0.5">
+                  <button
+                    onClick={() => onRetry(b)}
+                    disabled={isRetrying}
+                    className="flex-1 h-8 rounded-lg bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 transition-all disabled:opacity-50"
+                  >
+                    {isRetrying
+                      ? <><Loader2 className="h-3 w-3 animate-spin" />Retrying…</>
+                      : <><WifiOff className="h-3 w-3" />Retry Send</>}
+                  </button>
+                  <button
+                    onClick={() => triggerPrint({
+                      ref: b.ref,
+                      student: b.student,
+                      vehicle: b.vehicle,
+                      hours: b.hours,
+                      sessions: b.sessions.map(s => ({ ...s, date: new Date(s.date) })),
+                      addons: b.addons,
+                      paymentMethod: b.paymentMethod,
+                      grandTotal: b.grandTotal,
+                      assignedInstructor: b.assignedInstructor,
+                    })}
+                    className="h-8 px-3 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-500 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 transition-all"
+                  >
+                    <Receipt className="h-3 w-3" />
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+
+          {bookings.length > 1 && (
+            <div className="px-4 py-3">
+              <button
+                onClick={onClearAll}
+                className="text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-red-500 transition-colors"
+              >
+                Clear all recent
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
 // Main page
 // ---------------------------------------------------------------------------
 
@@ -417,18 +561,23 @@ export default function AdminBookingPage() {
   } | null>(null)
   const [submitError, setSubmitError] = useState("")
 
+  // ── Recent bookings ──
+  const [recentBookings, setRecentBookings] = useState<RecentBookingRecord[]>([])
+  const [retryingId, setRetryingId] = useState<string | null>(null)
+
   const abortRef = useRef<AbortController | null>(null)
+
+  // Load recent bookings from localStorage on mount
+  useEffect(() => {
+    setRecentBookings(loadRecentBookings())
+  }, [])
 
   // ---------------------------------------------------------------------------
   // Derived
   // ---------------------------------------------------------------------------
 
   const isLifestyleDriving = selectedVehicle?.code === "LD"
-
-  // For LD: each session is 1 hour; "hours" state holds the number of sessions in the package
-  // The session duration is always 1 for LD
   const LD_SESSION_DURATION = 1
-
   const LD_PRICES: Record<number, number> = { 1: 300, 5: 1500, 10: 3000 }
   const vehiclePrice  = isLifestyleDriving
     ? (LD_PRICES[hours] ?? 0)
@@ -440,8 +589,6 @@ export default function AdminBookingPage() {
   const scheduleValid = sessions.length > 0
   const canSubmit     = studentValid && courseValid && scheduleValid && !!paymentMethod && !submitting
   const canShowAutoFill = !!calDate && !!selTime && availableOnDay && !noInstructors && !checkingAvail
-
-  // The duration to use when booking a slot (1h for LD, normal hours otherwise)
   const sessionDuration = isLifestyleDriving ? LD_SESSION_DURATION : hours
 
   // ---------------------------------------------------------------------------
@@ -493,7 +640,6 @@ export default function AdminBookingPage() {
     )
     if (overlap) { alert("This slot overlaps an existing session."); return }
 
-    // For LD, cap at the package size
     if (isLifestyleDriving && sessions.length >= hours) {
       alert(`This package includes ${hours} session${hours !== 1 ? "s" : ""}. Remove one to add another.`)
       return
@@ -563,37 +709,53 @@ export default function AdminBookingPage() {
   }
 
   // ---------------------------------------------------------------------------
-  // Submit
+  // Submit (shared logic for new booking + retry)
   // ---------------------------------------------------------------------------
 
-  const handleSubmit = async () => {
-    if (!canSubmit || !selectedVehicle) return
-    setSubmitting(true)
-    setSubmitError("")
-    const ref   = genRef()
-    const phone = normaliseSAPhone(student.phone) ?? student.phone
+  const sendPayload = async (payload: Record<string, unknown>): Promise<boolean> => {
+    const res = await fetch(BOOKING_API, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    })
+    return res.ok
+  }
 
-    const payload = {
-      package:       selectedVehicle.label,
-      totalHours:    hours,
-      firstName:     student.firstName,
-      lastName:      student.lastName,
-      email:         student.email,
+  const buildPayload = (params: {
+    ref: string
+    student: StudentForm
+    vehicle: Vehicle
+    hours: number
+    sessions: Session[]
+    addons: string[]
+    paymentMethod: string
+    grandTotal: number
+    sessionInstructors: Record<string, AssignedInstructor>
+  }) => {
+    const { ref, student: s, vehicle, hours: h, sessions: sess, addons, paymentMethod: pm, grandTotal: gt, sessionInstructors: si } = params
+    const phone = normaliseSAPhone(s.phone) ?? s.phone
+    return {
+      package:       vehicle.label,
+      totalHours:    h,
+      firstName:     s.firstName,
+      lastName:      s.lastName,
+      email:         s.email,
       phone,
-      pickupAddress: student.location,
-      contactMethod: student.contactMethod,
-      paymentMethod,
-      paid:          paymentMethod === "cash" ? 1 : 0,
-      addons:        selectedAddons,
-      grandTotal,
-      sessions: sessions.map((s) => {
-        const dateStr    = toDateStr(s.date)
-        const instructor = sessionInstructors[dateStr]
+      pickupAddress: s.location,
+      contactMethod: s.contactMethod,
+      paymentMethod: pm,
+      paid:          pm === "cash" ? 1 : 0,
+      addons,
+      grandTotal:    gt,
+      sessions: sess.map(session => {
+        const dateStr    = toDateStr(session.date instanceof Date ? session.date : new Date(session.date))
+        const instructor = si[dateStr]
         return {
           date:                dateStr,
-          formattedDate:       s.date.toLocaleDateString("en-ZA", { weekday: "long", day: "2-digit", month: "short" }),
-          time:                s.time,
-          duration:            `${s.duration}h`,
+          formattedDate:       (session.date instanceof Date ? session.date : new Date(session.date))
+            .toLocaleDateString("en-ZA", { weekday: "long", day: "2-digit", month: "short" }),
+          time:                session.time,
+          duration:            `${session.duration}h`,
           instructorFirstName: instructor?.firstName ?? "",
           instructorLastName:  instructor?.lastName  ?? "",
           instructorPhone:     instructor?.phone     ?? "",
@@ -603,17 +765,53 @@ export default function AdminBookingPage() {
       source:     "Admin Booking",
       timestamp:  new Date().toLocaleDateString("en-ZA", { day: "numeric", month: "long", year: "numeric" }),
     }
+  }
+
+  const handleSubmit = async () => {
+    if (!canSubmit || !selectedVehicle) return
+    setSubmitting(true)
+    setSubmitError("")
+    const ref = genRef()
+
+    const payload = buildPayload({
+      ref,
+      student,
+      vehicle: selectedVehicle,
+      hours,
+      sessions,
+      addons: selectedAddons,
+      paymentMethod,
+      grandTotal,
+      sessionInstructors,
+    })
+
+    // Save to recent bookings immediately (before sending) so it's captured even on failure
+    const record: RecentBookingRecord = {
+      id:                 `${ref}-${Date.now()}`,
+      ref,
+      studentName:        `${student.firstName} ${student.lastName}`,
+      vehicle:            selectedVehicle,
+      hours,
+      sessions:           sessions.map(s => ({ date: toDateStr(s.date), time: s.time, duration: s.duration })),
+      addons:             selectedAddons,
+      paymentMethod,
+      grandTotal,
+      assignedInstructor,
+      student,
+      bookedAt:           new Date().toISOString(),
+      payload,
+    }
+
+    const updatedRecent = [record, ...recentBookings]
+    setRecentBookings(updatedRecent)
+    saveRecentBookings(updatedRecent)
 
     try {
-      const res = await fetch(BOOKING_API, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      })
-      if (res.ok) {
+      const ok = await sendPayload(payload)
+      if (ok) {
         setResult({
           ref,
-          studentName:        `${student.firstName} ${student.lastName}`,
+          studentName:        record.studentName,
           vehicle:            selectedVehicle,
           hours,
           sessions,
@@ -624,13 +822,46 @@ export default function AdminBookingPage() {
           student,
         })
       } else {
-        setSubmitError("Booking failed — please check your connection and try again.")
+        setSubmitError("Booking saved locally but failed to send — use Retry in Recent Bookings when connection improves.")
       }
     } catch {
-      setSubmitError("Network error — please try again.")
+      setSubmitError("Network error — booking saved locally. Use Retry in Recent Bookings below.")
     } finally {
       setSubmitting(false)
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Retry a recent booking
+  // ---------------------------------------------------------------------------
+
+  const handleRetry = async (booking: RecentBookingRecord) => {
+    setRetryingId(booking.id)
+    try {
+      const ok = await sendPayload(booking.payload)
+      if (ok) {
+        // Show success briefly then remove from recent
+        alert(`✅ ${booking.ref} sent successfully!`)
+        handleRemoveRecent(booking.id)
+      } else {
+        alert(`❌ Retry failed for ${booking.ref}. Try again when connection improves.`)
+      }
+    } catch {
+      alert(`❌ Network error retrying ${booking.ref}. Try again later.`)
+    } finally {
+      setRetryingId(null)
+    }
+  }
+
+  const handleRemoveRecent = (id: string) => {
+    const updated = recentBookings.filter(b => b.id !== id)
+    setRecentBookings(updated)
+    saveRecentBookings(updated)
+  }
+
+  const handleClearAllRecent = () => {
+    setRecentBookings([])
+    saveRecentBookings([])
   }
 
   const resetForm = () => {
@@ -701,8 +932,6 @@ export default function AdminBookingPage() {
       {/* ── Top bar ── */}
       <div className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur-sm shadow-sm shadow-slate-100">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 flex items-center justify-between gap-2">
-
-          {/* Left: Brand */}
           <div className="flex items-center gap-3 min-w-0">
             <img
               src="https://driving-school-gold.vercel.app/DEES-DRIVER-TRAINING-LOGO.png"
@@ -715,10 +944,7 @@ export default function AdminBookingPage() {
               </p>
             </div>
           </div>
-
-          {/* Right: Actions */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-            {/* Students link */}
             <a
               href="/students"
               className="flex items-center gap-1.5 h-8 px-2.5 sm:px-3 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 text-[10px] font-black uppercase tracking-widest transition-all border border-red-200"
@@ -726,8 +952,6 @@ export default function AdminBookingPage() {
               <Users className="h-3 w-3 shrink-0" />
               <span className="hidden sm:inline">Students</span>
             </a>
-
-            {/* Instructors link */}
             <a
               href="/instructors"
               className="flex items-center gap-1.5 h-8 px-2.5 sm:px-3 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 hover:text-red-700 text-[10px] font-black uppercase tracking-widest transition-all border border-red-200"
@@ -735,8 +959,6 @@ export default function AdminBookingPage() {
               <GraduationCap className="h-3 w-3 shrink-0" />
               <span className="hidden sm:inline">Instructors</span>
             </a>
-
-            {/* Reset */}
             <button
               onClick={resetForm}
               className="flex items-center gap-1.5 h-8 px-2.5 sm:px-3 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 text-[10px] font-black uppercase tracking-widest transition-all"
@@ -744,8 +966,6 @@ export default function AdminBookingPage() {
               <RotateCcw className="h-3 w-3 shrink-0" />
               <span className="hidden sm:inline">Reset</span>
             </button>
-
-            {/* Sign out — properly styled */}
             <button
               onClick={() => signOut({ callbackUrl: "/login" })}
               className="flex items-center gap-1.5 h-8 px-2.5 sm:px-3 rounded-lg bg-slate-100 hover:bg-red-50 border border-transparent hover:border-red-200 text-slate-400 hover:text-red-500 text-[10px] font-black uppercase tracking-widest transition-all"
@@ -758,7 +978,6 @@ export default function AdminBookingPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
-        {/* On mobile: single column. On xl: two column sidebar layout */}
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_360px] gap-4 sm:gap-6">
 
           {/* ── LEFT COLUMN ── */}
@@ -793,8 +1012,6 @@ export default function AdminBookingPage() {
                     <AdminInput value={student.location} onChange={v => setStudent(s => ({ ...s, location: v }))} placeholder="123 Street, Suburb" />
                   </Field>
                 </div>
-
-                {/* ── Preferred contact method ── */}
                 <div className="col-span-1 sm:col-span-2">
                   <Field label="Preferred method of contact">
                     <div className="grid grid-cols-3 gap-2 mt-1">
@@ -936,25 +1153,16 @@ export default function AdminBookingPage() {
 
             {/* ─── 3. Scheduling ─── */}
             <Section title="Schedule Sessions" icon={CalendarDays} dim={!courseValid}>
-              {/* Stack calendar and slots vertically on mobile, side-by-side on lg+ */}
               <div className="grid grid-cols-1 lg:grid-cols-[auto_1fr] gap-4 sm:gap-6">
-
                 <div className="space-y-3 sm:space-y-4">
-                  {/* LD session counter */}
                   {isLifestyleDriving && hours > 0 && (
                     <div className="flex items-center justify-between px-1">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">
-                        Sessions booked
-                      </p>
-                      <p className={`text-[11px] font-black uppercase tracking-widest ${
-                        sessions.length >= hours ? "text-red-600" : "text-slate-500"
-                      }`}>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-slate-400">Sessions booked</p>
+                      <p className={`text-[11px] font-black uppercase tracking-widest ${sessions.length >= hours ? "text-red-600" : "text-slate-500"}`}>
                         {sessions.length} / {hours}
                       </p>
                     </div>
                   )}
-
-                  {/* Center calendar on mobile */}
                   <div className={`rounded-2xl overflow-hidden border border-slate-200 bg-white transition-opacity mx-auto lg:mx-0 w-fit ${checkingAvail ? "opacity-50 pointer-events-none" : ""}`}>
                     <Calendar
                       mode="single"
@@ -964,7 +1172,6 @@ export default function AdminBookingPage() {
                       className="p-3"
                     />
                   </div>
-
                   {checkingAvail && (
                     <div className="flex items-center gap-2 text-[11px] text-red-500 font-bold uppercase">
                       <Loader2 className="h-3.5 w-3.5 animate-spin" /> Checking availability…
@@ -994,7 +1201,6 @@ export default function AdminBookingPage() {
 
                   {calDate && !checkingAvail && availableOnDay && !noInstructors && (
                     <>
-                      {/* Time slots: 3 cols on mobile, 4 on larger */}
                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                         {WORKING_HOURS.map((time, idx) => {
                           const range = WORKING_HOURS.slice(idx, idx + sessionDuration)
@@ -1043,7 +1249,6 @@ export default function AdminBookingPage() {
                             <Zap className="h-3.5 w-3.5 text-red-400" />
                             <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Auto-fill recurring slots</p>
                           </div>
-
                           <div className="flex gap-2">
                             {(["none", "weekly", "biweekly"] as const).map(opt => {
                               const labels = { none: "Once", weekly: "Weekly", biweekly: "Bi-weekly" }
@@ -1062,7 +1267,6 @@ export default function AdminBookingPage() {
                               )
                             })}
                           </div>
-
                           {repeatMode !== "none" && !autoFillPreview && (
                             <button
                               onClick={previewAutoFill}
@@ -1074,7 +1278,6 @@ export default function AdminBookingPage() {
                                 : <><Search className="h-3.5 w-3.5" />Preview upcoming slots</>}
                             </button>
                           )}
-
                           {autoFillPreview && (
                             <div className="space-y-2">
                               {autoFillPreview.status === "none" && (
@@ -1198,8 +1401,7 @@ export default function AdminBookingPage() {
 
           </div>
 
-          {/* ── RIGHT COLUMN — Summary + submit ── */}
-          {/* On mobile this appears below the form sections; sticky only on xl */}
+          {/* ── RIGHT COLUMN ── */}
           <div className="space-y-4 sm:space-y-5">
             <div className="xl:sticky xl:top-20 space-y-4">
 
@@ -1208,10 +1410,7 @@ export default function AdminBookingPage() {
                 <div className="px-4 sm:px-5 py-4 border-b border-slate-100 bg-slate-50">
                   <p className="text-[11px] font-black uppercase tracking-[0.18em] text-slate-500">Booking Summary</p>
                 </div>
-
                 <div className="p-4 sm:p-5 space-y-4 sm:space-y-5">
-
-                  {/* Student */}
                   <div className="space-y-1">
                     <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Student</p>
                     {studentValid ? (
@@ -1228,8 +1427,6 @@ export default function AdminBookingPage() {
                       <p className="text-[11px] text-slate-300 font-bold uppercase">Not entered</p>
                     )}
                   </div>
-
-                  {/* Course */}
                   <div className="space-y-1">
                     <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Course</p>
                     {selectedVehicle ? (
@@ -1244,8 +1441,6 @@ export default function AdminBookingPage() {
                       <p className="text-[11px] text-slate-300 font-bold uppercase">Not selected</p>
                     )}
                   </div>
-
-                  {/* Sessions */}
                   <div className="space-y-2">
                     <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">
                       Sessions {sessions.length > 0 && <span className="text-slate-700">{sessions.length}{isLifestyleDriving && hours > 0 ? `/${hours}` : ""}</span>}
@@ -1280,8 +1475,6 @@ export default function AdminBookingPage() {
                       </div>
                     )}
                   </div>
-
-                  {/* Add-ons */}
                   {selectedAddons.length > 0 && (
                     <div className="space-y-1">
                       <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Add-ons</p>
@@ -1295,8 +1488,6 @@ export default function AdminBookingPage() {
                       })}
                     </div>
                   )}
-
-                  {/* Instructor */}
                   {assignedInstructor && (
                     <div className="space-y-1">
                       <p className="text-[9px] font-black uppercase tracking-widest text-slate-400">Assigned Instructor</p>
@@ -1304,8 +1495,6 @@ export default function AdminBookingPage() {
                       <p className="text-[10px] text-slate-400 font-bold">{assignedInstructor.phone}</p>
                     </div>
                   )}
-
-                  {/* Divider + total */}
                   <div className="border-t border-slate-100 pt-4 space-y-2">
                     <div className="flex justify-between text-[11px] font-bold text-slate-400 uppercase">
                       <span>{isLifestyleDriving ? `${hours} session${hours !== 1 ? "s" : ""}` : `Session (${hours}h)`}</span>
@@ -1348,8 +1537,8 @@ export default function AdminBookingPage() {
 
               {/* Submit error */}
               {submitError && (
-                <div className="flex items-start gap-2 p-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-[11px] font-bold uppercase">
-                  <AlertCircle className="h-3.5 w-3.5 mt-0.5 shrink-0" />{submitError}
+                <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-bold">
+                  <WifiOff className="h-3.5 w-3.5 mt-0.5 shrink-0" />{submitError}
                 </div>
               )}
 
@@ -1363,6 +1552,16 @@ export default function AdminBookingPage() {
                   ? <><Loader2 className="h-4 w-4 animate-spin" />Confirming…</>
                   : <><BadgeCheck className="h-4 w-4" />Confirm Booking</>}
               </button>
+
+              {/* ── Recent Bookings ── */}
+              <RecentBookingsPanel
+                bookings={recentBookings}
+                onRetry={handleRetry}
+                onRemove={handleRemoveRecent}
+                onClearAll={handleClearAllRecent}
+                retryingId={retryingId}
+              />
+
             </div>
           </div>
 
