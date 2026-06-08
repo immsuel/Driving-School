@@ -63,11 +63,23 @@ function fmtWeekRange(start: Date) {
 }
 
 /**
+ * Airtable sometimes exports field names with a leading BOM character (U+FEFF).
+ * This normalises the fields object so lookups always work regardless.
+ */
+function normaliseFields(fields: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(fields)) {
+    out[k.replace(/^\uFEFF/, "")] = v
+  }
+  return out
+}
+
+/**
  * Robustly extract the instructor's full name from whatever fields Airtable returns.
  * We try every likely field name combination in priority order.
  */
 function instructorFullName(inst: Instructor): string {
-  const f = inst.fields
+  const f = normaliseFields(inst.fields)
   // 1. Explicit full-name fields
   for (const key of ["Name", "Full Name", "Instructor Name", "Display Name"]) {
     if (f[key] && typeof f[key] === "string" && (f[key] as string).trim()) {
