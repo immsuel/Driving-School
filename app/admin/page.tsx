@@ -562,16 +562,12 @@ export default function AdminBookingPage() {
   const [submitError, setSubmitError] = useState("")
 
   // ── Recent bookings ──
-  const [recentBookings, setRecentBookings] = useState<RecentBookingRecord[]>([])
+  const [recentBookings, setRecentBookings] = useState<RecentBookingRecord[]>(() => loadRecentBookings())
   const [retryingId, setRetryingId] = useState<string | null>(null)
 
   const abortRef = useRef<AbortController | null>(null)
 
   // Load recent bookings from localStorage on mount
-  useEffect(() => {
-    setRecentBookings(loadRecentBookings())
-  }, [])
-
   // ---------------------------------------------------------------------------
   // Derived
   // ---------------------------------------------------------------------------
