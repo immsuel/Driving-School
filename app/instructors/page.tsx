@@ -207,10 +207,25 @@ function printWeekSchedule(instructor: Instructor, weekDates: Date[], sessions: 
   <span>${name}</span>
 </div></body></html>`
 
-  const win = window.open("", "_blank", "width=860,height=1000")
-  if (!win) return
-  win.document.write(html); win.document.close(); win.focus()
-  setTimeout(() => win.print(), 500)
+  // Pake (WebView) blocks window.open, so we inject a hidden iframe instead.
+  const existing = document.getElementById("__print_frame")
+  if (existing) existing.remove()
+
+  const iframe = document.createElement("iframe")
+  iframe.id = "__print_frame"
+  iframe.style.cssText = "position:fixed;top:0;left:0;width:0;height:0;border:none;visibility:hidden;"
+  document.body.appendChild(iframe)
+
+  const doc = iframe.contentDocument ?? iframe.contentWindow?.document
+  if (!doc) return
+  doc.open(); doc.write(html); doc.close()
+
+  iframe.onload = () => {
+    setTimeout(() => {
+      iframe.contentWindow?.focus()
+      iframe.contentWindow?.print()
+    }, 300)
+  }
 }
 
 // ---------------------------------------------------------------------------
