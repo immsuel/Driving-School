@@ -12,28 +12,16 @@ import {
 
 interface Instructor {
   id: string
-  fields: {
-    // Airtable returns a single "Name" field by default
-    "Name"?: string
-    // Also handle split fields if ever present
-    "First Name"?: string
-    "Last Name"?: string
-    "Phone"?: string
-    "Email"?: string
-    "License Types"?: string      // e.g. "Lifestyle Driving" — single-line or multi
-    "Working Days"?: string
-    "Active"?: boolean
-    [key: string]: unknown
-  }
+  fields: Record<string, unknown>
 }
 
 interface SessionRecord {
   id: string
   fields: {
     "Student Name"?: string
-    "Date"?: string           // "2026-06-10"
-    "Time"?: string           // "10:00"
-    "Duration"?: string       // "1h"
+    "Date"?: string
+    "Time"?: string
+    "Duration"?: string
     "Instructor Name"?: string
     "Instructor Phone"?: string
     "Confirmed"?: boolean
@@ -46,69 +34,81 @@ interface SessionRecord {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const DAY_NAMES       = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-const FULL_DAY_NAMES  = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-const MONTH_NAMES     = ["January", "February", "March", "April", "May", "June",
+const DAY_NAMES      = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+const FULL_DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+const MONTH_NAMES    = ["January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"]
 
 function getWeekStart(d: Date): Date {
   const copy = new Date(d)
   const day  = copy.getDay()
-  const diff = day === 0 ? -6 : 1 - day   // week starts Monday
-  copy.setDate(copy.getDate() + diff)
+  copy.setDate(copy.getDate() + (day === 0 ? -6 : 1 - day))
   copy.setHours(0, 0, 0, 0)
   return copy
 }
-
 function addDays(d: Date, n: number): Date {
-  const copy = new Date(d)
-  copy.setDate(copy.getDate() + n)
-  return copy
+  const c = new Date(d); c.setDate(c.getDate() + n); return c
 }
-
-function toDateStr(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+function toDateStr(d: Date) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`
 }
-
 function fmtShort(d: Date) {
-  return `${String(d.getDate()).padStart(2, "0")} ${MONTH_NAMES[d.getMonth()].slice(0, 3)}`
+  return `${String(d.getDate()).padStart(2,"0")} ${MONTH_NAMES[d.getMonth()].slice(0,3)}`
 }
-
-function fmtWeekRange(start: Date): string {
+function fmtWeekRange(start: Date) {
   const end = addDays(start, 6)
-  if (start.getMonth() === end.getMonth()) {
-    return `${start.getDate()}–${end.getDate()} ${MONTH_NAMES[start.getMonth()]} ${start.getFullYear()}`
-  }
-  return `${fmtShort(start)} – ${fmtShort(end)} ${end.getFullYear()}`
+  return start.getMonth() === end.getMonth()
+    ? `${start.getDate()}–${end.getDate()} ${MONTH_NAMES[start.getMonth()]} ${start.getFullYear()}`
+    : `${fmtShort(start)} – ${fmtShort(end)} ${end.getFullYear()}`
 }
 
 /**
- * Airtable's default primary field is called "Name".
- * Falls back to joining "First Name" + "Last Name" if split fields exist.
+ * Robustly extract the instructor's full name from whatever fields Airtable returns.
+ * We try every likely field name combination in priority order.
  */
 function instructorFullName(inst: Instructor): string {
-  if (inst.fields["Name"]) return inst.fields["Name"]
-  return `${inst.fields["First Name"] ?? ""} ${inst.fields["Last Name"] ?? ""}`.trim()
+  const f = inst.fields
+  // 1. Explicit full-name fields
+  for (const key of ["Name", "Full Name", "Instructor Name", "Display Name"]) {
+    if (f[key] && typeof f[key] === "string" && (f[key] as string).trim()) {
+      return (f[key] as string).trim()
+    }
+  }
+  // 2. First + Last joined
+  const first = (f["First Name"] ?? f["FirstName"] ?? "") as string
+  const last  = (f["Last Name"]  ?? f["LastName"]  ?? "") as string
+  const joined = `${first} ${last}`.trim()
+  if (joined) return joined
+  // 3. Fallback: return first non-empty string field value
+  for (const val of Object.values(f)) {
+    if (typeof val === "string" && val.trim()) return val.trim()
+  }
+  return "Unknown"
 }
 
 /**
- * Duration is stored as "1h" string. Parse it to a number.
+ * The name we use to query sessions — must match "Instructor Name" in Sessions table exactly.
+ * We derive it from the instructor record the same way instructorFullName does.
  */
-function parseDuration(raw: string | undefined | null): number {
+function instructorQueryName(inst: Instructor): string {
+  return instructorFullName(inst)
+}
+
+function parseDuration(raw: unknown): number {
   if (!raw) return 0
   const n = parseFloat(String(raw).replace(/[^\d.]/g, ""))
   return isNaN(n) ? 0 : n
 }
 
-function initials(name: string): string {
+function initials(name: string) {
   return name.split(" ").filter(Boolean).map(w => w[0]).join("").toUpperCase().slice(0, 2)
 }
 
-const PALETTE = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#06b6d4", "#6366f1", "#a855f7", "#ec4899"]
-function instructorColor(name: string): string {
-  let hash = 0
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
-  return PALETTE[Math.abs(hash) % PALETTE.length]
+const PALETTE = ["#ef4444","#f97316","#eab308","#22c55e","#06b6d4","#6366f1","#a855f7","#ec4899"]
+function instructorColor(name: string) {
+  let h = 0
+  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h)
+  return PALETTE[Math.abs(h) % PALETTE.length]
 }
 
 // ---------------------------------------------------------------------------
@@ -130,80 +130,62 @@ function printWeekSchedule(instructor: Instructor, weekDates: Date[], sessions: 
   }
 
   const totalSessions = sessions.length
-  const totalHours    = sessions.reduce((sum, s) => sum + parseDuration(s.fields["Duration"]), 0)
+  const totalHours    = sessions.reduce((s, r) => s + parseDuration(r.fields["Duration"]), 0)
 
   const dayRows = weekDates.map(d => {
-    const key        = toDateStr(d)
-    const daySessions = byDay[key]
-    const isWeekend  = d.getDay() === 0 || d.getDay() === 6
-    const dayHours   = daySessions.reduce((h, s) => h + parseDuration(s.fields["Duration"]), 0)
-
-    const sessionRows = daySessions.length === 0
-      ? `<tr><td colspan="3" style="color:#bbb;font-size:11px;padding:8px 0;font-style:italic">No sessions scheduled</td></tr>`
-      : daySessions.map(s => `
-          <tr>
-            <td>${s.fields["Time"] ?? "—"}</td>
-            <td>${s.fields["Duration"] ?? "—"}</td>
-            <td style="font-weight:600">${s.fields["Student Name"] ?? "—"}</td>
-          </tr>`).join("")
-
+    const key         = toDateStr(d)
+    const ds          = byDay[key]
+    const isWeekend   = d.getDay() === 0 || d.getDay() === 6
+    const dayHours    = ds.reduce((s, r) => s + parseDuration(r.fields["Duration"]), 0)
+    const sessionRows = ds.length === 0
+      ? `<tr><td colspan="3" style="color:#bbb;font-size:11px;padding:8px 0;font-style:italic">No sessions</td></tr>`
+      : ds.map(s => `<tr><td>${s.fields["Time"]??""}</td><td>${s.fields["Duration"]??""}</td><td style="font-weight:600">${s.fields["Student Name"]??""}</td></tr>`).join("")
     return `
-      <div class="day-block${isWeekend ? " weekend" : ""}">
+      <div class="day-block${isWeekend?" weekend":""}">
         <div class="day-header">
           <span class="day-name">${FULL_DAY_NAMES[d.getDay()]}</span>
           <span class="day-date">${fmtShort(d)}</span>
-          ${daySessions.length > 0 ? `<span class="day-count">${daySessions.length} session${daySessions.length !== 1 ? "s" : ""} · ${dayHours}h</span>` : ""}
+          ${ds.length > 0 ? `<span class="day-count">${ds.length} session${ds.length!==1?"s":""} · ${dayHours}h</span>` : ""}
         </div>
-        <table>
-          <thead><tr><th>Time</th><th>Dur.</th><th>Student</th></tr></thead>
-          <tbody>${sessionRows}</tbody>
-        </table>
+        <table><thead><tr><th>Time</th><th>Dur.</th><th>Student</th></tr></thead><tbody>${sessionRows}</tbody></table>
       </div>`
   }).join("")
 
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"/>
+  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/>
 <title>Week Schedule — ${name}</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'IBM Plex Sans', sans-serif; font-size: 12px; color: #111; background: #fff; padding: 32px 40px; max-width: 780px; margin: 0 auto; }
-  .header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 20px; border-bottom: 2px solid #111; margin-bottom: 28px; }
-  .logo-block h1 { font-family: 'IBM Plex Mono', monospace; font-size: 18px; font-weight: 700; letter-spacing: -0.5px; text-transform: uppercase; }
-  .logo-block p { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
-  .meta { text-align: right; }
-  .meta .instructor-name { font-family: 'IBM Plex Mono', monospace; font-size: 20px; font-weight: 700; color: #111; }
-  .meta .week-label { font-size: 11px; color: #888; margin-top: 4px; }
-  .meta .stats { font-size: 10px; color: #aaa; margin-top: 6px; text-transform: uppercase; letter-spacing: 1px; }
-  .meta .phone { font-size: 10px; color: #888; margin-top: 3px; }
-  .days-grid { display: flex; flex-direction: column; gap: 20px; }
-  .day-block { border: 1px solid #e5e5e5; border-radius: 6px; overflow: hidden; }
-  .day-block.weekend { opacity: 0.6; }
-  .day-header { display: flex; align-items: baseline; gap: 10px; background: #f8f8f8; padding: 8px 14px; border-bottom: 1px solid #e5e5e5; }
-  .day-name { font-family: 'IBM Plex Mono', monospace; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; }
-  .day-date { font-size: 11px; color: #666; }
-  .day-count { margin-left: auto; font-size: 10px; color: #dc2626; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-  table { width: 100%; border-collapse: collapse; font-size: 11px; }
-  table th { text-align: left; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #aaa; padding: 6px 14px 4px; background: #fafafa; border-bottom: 1px solid #f0f0f0; }
-  table td { padding: 7px 14px; border-bottom: 1px solid #f5f5f5; color: #222; }
-  table tr:last-child td { border-bottom: none; }
-  .footer { margin-top: 36px; padding-top: 14px; border-top: 1px solid #e5e5e5; display: flex; justify-content: space-between; font-size: 9px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
-  @media print { body { padding: 16px 20px; } .day-block { break-inside: avoid; } }
-</style>
-</head>
-<body>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'IBM Plex Sans',sans-serif;font-size:12px;color:#111;background:#fff;padding:32px 40px;max-width:780px;margin:0 auto}
+  .header{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:20px;border-bottom:2px solid #111;margin-bottom:28px}
+  .logo-block h1{font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700;text-transform:uppercase}
+  .logo-block p{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+  .meta{text-align:right}
+  .meta .instructor-name{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700}
+  .meta .week-label{font-size:11px;color:#888;margin-top:4px}
+  .meta .stats{font-size:10px;color:#aaa;margin-top:6px;text-transform:uppercase;letter-spacing:1px}
+  .meta .phone{font-size:10px;color:#888;margin-top:3px}
+  .days-grid{display:flex;flex-direction:column;gap:20px}
+  .day-block{border:1px solid #e5e5e5;border-radius:6px;overflow:hidden}
+  .day-block.weekend{opacity:0.6}
+  .day-header{display:flex;align-items:baseline;gap:10px;background:#f8f8f8;padding:8px 14px;border-bottom:1px solid #e5e5e5}
+  .day-name{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:1.5px}
+  .day-date{font-size:11px;color:#666}
+  .day-count{margin-left:auto;font-size:10px;color:#dc2626;font-weight:600;text-transform:uppercase}
+  table{width:100%;border-collapse:collapse;font-size:11px}
+  table th{text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#aaa;padding:6px 14px 4px;background:#fafafa;border-bottom:1px solid #f0f0f0}
+  table td{padding:7px 14px;border-bottom:1px solid #f5f5f5;color:#222}
+  table tr:last-child td{border-bottom:none}
+  .footer{margin-top:36px;padding-top:14px;border-top:1px solid #e5e5e5;display:flex;justify-content:space-between;font-size:9px;color:#aaa;text-transform:uppercase;letter-spacing:1px}
+  @media print{body{padding:16px 20px}.day-block{break-inside:avoid}}
+</style></head><body>
 <div class="header">
-  <div class="logo-block">
-    <h1>Dees Driver Training</h1>
-    <p>Instructor Week Schedule</p>
-  </div>
+  <div class="logo-block"><h1>Dees Driver Training</h1><p>Instructor Week Schedule</p></div>
   <div class="meta">
     <div class="instructor-name">${name}</div>
     <div class="week-label">${weekLabel}</div>
     ${instructor.fields["Phone"] ? `<div class="phone">${instructor.fields["Phone"]}</div>` : ""}
-    <div class="stats">${totalSessions} session${totalSessions !== 1 ? "s" : ""} · ${totalHours}h total</div>
+    <div class="stats">${totalSessions} session${totalSessions!==1?"s":""} · ${totalHours}h total</div>
   </div>
 </div>
 <div class="days-grid">${dayRows}</div>
@@ -211,15 +193,11 @@ function printWeekSchedule(instructor: Instructor, weekDates: Date[], sessions: 
   <span>Dees Driver Training · Durban</span>
   <span>Printed ${new Date().toLocaleString("en-ZA")}</span>
   <span>${name}</span>
-</div>
-</body>
-</html>`
+</div></body></html>`
 
   const win = window.open("", "_blank", "width=860,height=1000")
   if (!win) return
-  win.document.write(html)
-  win.document.close()
-  win.focus()
+  win.document.write(html); win.document.close(); win.focus()
   setTimeout(() => win.print(), 500)
 }
 
@@ -227,25 +205,25 @@ function printWeekSchedule(instructor: Instructor, weekDates: Date[], sessions: 
 // Avatar
 // ---------------------------------------------------------------------------
 
-function Avatar({ name, size = "md" }: { name: string; size?: "sm" | "md" | "lg" }) {
+function Avatar({ name, size = "md" }: { name: string; size?: "sm"|"md"|"lg" }) {
   const color = instructorColor(name)
-  const sz = size === "sm" ? "h-7 w-7 text-[10px]" : size === "lg" ? "h-12 w-12 text-base" : "h-9 w-9 text-xs"
+  const sz = size==="sm"?"h-7 w-7 text-[10px]":size==="lg"?"h-12 w-12 text-base":"h-9 w-9 text-xs"
   return (
-    <div className={`${sz} rounded-full flex items-center justify-center font-black text-white shrink-0`} style={{ backgroundColor: color }}>
+    <div className={`${sz} rounded-full flex items-center justify-center font-black text-white shrink-0`} style={{backgroundColor:color}}>
       {initials(name)}
     </div>
   )
 }
 
 // ---------------------------------------------------------------------------
-// Session pill — uses real field names
+// Session pill
 // ---------------------------------------------------------------------------
 
 function SessionPill({ session }: { session: SessionRecord }) {
   const finished = session.fields["Finished"] === true || session.fields["Finished"] === 1
   return (
-    <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${finished ? "bg-slate-50 border-slate-100 opacity-50" : "bg-white border-slate-200"}`}>
-      <div className={`h-1.5 w-1.5 rounded-full shrink-0 ${finished ? "bg-slate-300" : "bg-red-400"}`} />
+    <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${finished?"bg-slate-50 border-slate-100 opacity-50":"bg-white border-slate-200"}`}>
+      <div className={`h-1.5 w-1.5 rounded-full shrink-0 ${finished?"bg-slate-300":"bg-red-400"}`} />
       <div className="min-w-0 flex-1">
         <p className="text-[11px] font-bold text-slate-700 truncate">{session.fields["Student Name"] ?? "—"}</p>
         <p className="text-[10px] text-slate-400 font-bold">
@@ -264,35 +242,45 @@ function SessionPill({ session }: { session: SessionRecord }) {
 function DayColumn({ date, sessions, isToday }: { date: Date; sessions: SessionRecord[]; isToday: boolean }) {
   const isWeekend  = date.getDay() === 0 || date.getDay() === 6
   const totalHours = sessions.reduce((h, s) => h + parseDuration(s.fields["Duration"]), 0)
-
   return (
     <div className={`flex-1 min-w-0 rounded-xl border transition-all ${
-      isToday    ? "border-red-200 bg-red-50/30"
-      : isWeekend ? "border-slate-100 bg-slate-50/40 opacity-60"
-      : "border-slate-200 bg-white"
+      isToday?"border-red-200 bg-red-50/30":isWeekend?"border-slate-100 bg-slate-50/40 opacity-60":"border-slate-200 bg-white"
     }`}>
-      <div className={`px-2 py-2.5 border-b ${isToday ? "border-red-100" : "border-slate-100"}`}>
-        <p className={`text-[9px] font-black uppercase tracking-widest ${isToday ? "text-red-500" : "text-slate-400"}`}>
-          {DAY_NAMES[date.getDay()]}
-        </p>
-        <p className={`text-lg font-black ${isToday ? "text-red-600" : "text-slate-700"}`}>
-          {date.getDate()}
-        </p>
-        {sessions.length > 0 && (
-          <p className="text-[9px] font-bold text-slate-400 mt-0.5">
-            {sessions.length}s · {totalHours}h
-          </p>
-        )}
+      <div className={`px-2 py-2.5 border-b ${isToday?"border-red-100":"border-slate-100"}`}>
+        <p className={`text-[9px] font-black uppercase tracking-widest ${isToday?"text-red-500":"text-slate-400"}`}>{DAY_NAMES[date.getDay()]}</p>
+        <p className={`text-lg font-black ${isToday?"text-red-600":"text-slate-700"}`}>{date.getDate()}</p>
+        {sessions.length > 0 && <p className="text-[9px] font-bold text-slate-400 mt-0.5">{sessions.length}s · {totalHours}h</p>}
       </div>
       <div className="p-1.5 space-y-1.5 min-h-[80px]">
-        {sessions.length === 0 ? (
-          <p className="text-[9px] text-slate-300 font-bold uppercase text-center py-3">Free</p>
-        ) : (
-          sessions
-            .sort((a, b) => (a.fields["Time"] ?? "").localeCompare(b.fields["Time"] ?? ""))
-            .map(s => <SessionPill key={s.id} session={s} />)
-        )}
+        {sessions.length === 0
+          ? <p className="text-[9px] text-slate-300 font-bold uppercase text-center py-3">Free</p>
+          : sessions.sort((a,b)=>(a.fields["Time"]??"").localeCompare(b.fields["Time"]??"")).map(s=><SessionPill key={s.id} session={s}/>)
+        }
       </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Debug panel — shows raw fields so we can see exactly what Airtable returns
+// ---------------------------------------------------------------------------
+
+function DebugPanel({ instructor }: { instructor: Instructor }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50 overflow-hidden">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-4 py-2 text-[10px] font-black uppercase tracking-widest text-amber-700"
+      >
+        <span>Debug: raw Airtable fields</span>
+        <span>{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <pre className="px-4 pb-3 text-[10px] text-amber-800 overflow-x-auto whitespace-pre-wrap">
+          {JSON.stringify(instructor.fields, null, 2)}
+        </pre>
+      )}
     </div>
   )
 }
@@ -313,43 +301,41 @@ export default function InstructorsPage() {
   const [loadingSess, setLoadingSess] = useState(false)
   const [sessError,   setSessError]   = useState("")
 
+  // Show debug panel until name resolution is confirmed working
+  const [showDebug,   setShowDebug]   = useState(true)
+
   const weekDates = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
   const todayStr  = toDateStr(new Date())
 
   // ── Load instructors ──
   const loadInstructors = useCallback(async () => {
-    setLoadingInst(true)
-    setInstError("")
+    setLoadingInst(true); setInstError("")
     try {
       const res  = await fetch("/api/instructors")
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const data = await res.json()
-      // Keep all records; Airtable "Active" checkbox = true when ticked
       setInstructors(data.records ?? [])
-    } catch (e) {
-      setInstError(String(e))
-    } finally {
-      setLoadingInst(false)
-    }
+    } catch (e) { setInstError(String(e)) }
+    finally     { setLoadingInst(false) }
   }, [])
 
   useEffect(() => { loadInstructors() }, [loadInstructors])
 
-  // ── Load sessions for selected instructor + current week ──
+  // ── Load sessions ──
   useEffect(() => {
     if (!selected) { setSessions([]); return }
-    const name = instructorFullName(selected)
-    setSessions([])
-    setLoadingSess(true)
-    setSessError("")
+    const name = instructorQueryName(selected)
+    setSessions([]); setLoadingSess(true); setSessError("")
 
     fetch(`/api/sessions?instructorName=${encodeURIComponent(name)}`)
       .then(r => r.json())
       .then(data => {
         const weekKeys = new Set(weekDates.map(toDateStr))
-        const filtered: SessionRecord[] = (data.records ?? []).filter((s: SessionRecord) => {
-          const dateKey = s.fields["Date"]?.slice(0, 10)
-          return dateKey && weekKeys.has(dateKey)
+        const all: SessionRecord[] = data.records ?? []
+        // Filter to this week
+        const filtered = all.filter(s => {
+          const key = s.fields["Date"]?.slice(0, 10)
+          return key && weekKeys.has(key)
         })
         setSessions(filtered)
       })
@@ -358,7 +344,7 @@ export default function InstructorsPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected, weekStart])
 
-  // ── Group sessions by day ──
+  // ── Group by day ──
   const sessionsByDay: Record<string, SessionRecord[]> = {}
   for (const d of weekDates) sessionsByDay[toDateStr(d)] = []
   for (const s of sessions) {
@@ -369,92 +355,72 @@ export default function InstructorsPage() {
   const totalWeekSessions = sessions.length
   const totalWeekHours    = sessions.reduce((h, s) => h + parseDuration(s.fields["Duration"]), 0)
 
-  const goToday    = () => setWeekStart(getWeekStart(new Date()))
-  const prevWeek   = () => setWeekStart(w => addDays(w, -7))
-  const nextWeek   = () => setWeekStart(w => addDays(w, 7))
+  const goToday       = () => setWeekStart(getWeekStart(new Date()))
+  const prevWeek      = () => setWeekStart(w => addDays(w, -7))
+  const nextWeek      = () => setWeekStart(w => addDays(w, 7))
   const isCurrentWeek = toDateStr(weekStart) === toDateStr(getWeekStart(new Date()))
 
   return (
     <div className="min-h-screen bg-slate-50/50">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 py-8 space-y-6">
 
-        {/* ── Page header ── */}
+        {/* Header */}
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400">Dees Driver Training</p>
             <h1 className="text-2xl font-black text-slate-900 mt-0.5 flex items-center gap-2">
-              <Users className="h-5 w-5 text-red-500" />
-              Instructors
+              <Users className="h-5 w-5 text-red-500" />Instructors
             </h1>
           </div>
-          <button
-            onClick={loadInstructors}
-            disabled={loadingInst}
-            className="h-9 w-9 rounded-xl border border-slate-200 bg-white flex items-center justify-center text-slate-400 hover:text-red-500 hover:border-red-200 transition-all"
-          >
-            <RefreshCw className={`h-3.5 w-3.5 ${loadingInst ? "animate-spin" : ""}`} />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowDebug(v => !v)}
+              className="h-8 px-3 rounded-lg border border-amber-200 bg-amber-50 text-amber-700 text-[10px] font-black uppercase tracking-widest hover:bg-amber-100 transition-all"
+            >
+              {showDebug ? "Hide" : "Show"} Debug
+            </button>
+            <button onClick={loadInstructors} disabled={loadingInst} className="h-9 w-9 rounded-xl border border-slate-200 bg-white flex items-center justify-center text-slate-400 hover:text-red-500 hover:border-red-200 transition-all">
+              <RefreshCw className={`h-3.5 w-3.5 ${loadingInst?"animate-spin":""}`} />
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 items-start">
 
-          {/* ── Left: Instructor list ── */}
+          {/* Instructor list */}
           <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-100 bg-slate-50">
               <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500">
-                Instructors
-                {!loadingInst && <span className="ml-2 text-slate-400 font-bold">{instructors.length}</span>}
+                Instructors {!loadingInst && <span className="ml-2 text-slate-400 font-bold">{instructors.length}</span>}
               </p>
             </div>
 
             {loadingInst ? (
-              <div className="flex items-center justify-center py-16">
-                <Loader2 className="h-5 w-5 animate-spin text-red-400" />
-              </div>
+              <div className="flex items-center justify-center py-16"><Loader2 className="h-5 w-5 animate-spin text-red-400" /></div>
             ) : instError ? (
-              <div className="p-4 flex items-start gap-2 text-red-500">
-                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                <p className="text-[11px] font-bold">{instError}</p>
-              </div>
+              <div className="p-4 flex items-start gap-2 text-red-500"><AlertCircle className="h-4 w-4 shrink-0 mt-0.5" /><p className="text-[11px] font-bold">{instError}</p></div>
             ) : instructors.length === 0 ? (
-              <div className="p-6 text-center">
-                <p className="text-[11px] text-slate-400 font-bold uppercase">No instructors found</p>
-              </div>
+              <div className="p-6 text-center"><p className="text-[11px] text-slate-400 font-bold uppercase">No instructors found</p></div>
             ) : (
               <div className="divide-y divide-slate-100">
                 {instructors.map(inst => {
                   const name       = instructorFullName(inst)
                   const isSelected = selected?.id === inst.id
+                  const phone      = inst.fields["Phone"] as string | undefined
                   const licTypes   = inst.fields["License Types"]
                     ? String(inst.fields["License Types"]).split(",").map(s => s.trim()).filter(Boolean)
                     : []
-
                   return (
-                    <button
-                      key={inst.id}
-                      onClick={() => setSelected(isSelected ? null : inst)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all hover:bg-slate-50 ${
-                        isSelected ? "bg-red-50 hover:bg-red-50" : ""
-                      }`}
+                    <button key={inst.id} onClick={() => setSelected(isSelected ? null : inst)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-all hover:bg-slate-50 ${isSelected?"bg-red-50 hover:bg-red-50":""}`}
                     >
                       <Avatar name={name} size="md" />
                       <div className="min-w-0 flex-1">
-                        <p className={`text-[12px] font-black truncate ${isSelected ? "text-red-700" : "text-slate-800"}`}>
-                          {name}
-                        </p>
-                        {inst.fields["Phone"] && (
-                          <p className="text-[10px] text-slate-400 font-bold flex items-center gap-1 mt-0.5">
-                            <Phone className="h-2.5 w-2.5" />
-                            {inst.fields["Phone"]}
-                          </p>
-                        )}
+                        <p className={`text-[12px] font-black truncate ${isSelected?"text-red-700":"text-slate-800"}`}>{name}</p>
+                        {phone && <p className="text-[10px] text-slate-400 font-bold flex items-center gap-1 mt-0.5"><Phone className="h-2.5 w-2.5" />{phone}</p>}
                         {licTypes.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-1">
-                            {licTypes.map(t => (
-                              <span key={t} className="px-1.5 py-0.5 rounded-md bg-slate-100 text-[9px] font-black text-slate-500 uppercase tracking-wide">
-                                {t}
-                              </span>
-                            ))}
+                            {licTypes.map(t => <span key={t} className="px-1.5 py-0.5 rounded-md bg-slate-100 text-[9px] font-black text-slate-500 uppercase tracking-wide">{t}</span>)}
                           </div>
                         )}
                       </div>
@@ -466,7 +432,7 @@ export default function InstructorsPage() {
             )}
           </div>
 
-          {/* ── Right: Schedule ── */}
+          {/* Schedule panel */}
           <div className="space-y-4">
             {!selected ? (
               <div className="rounded-2xl border border-dashed border-slate-200 bg-white flex flex-col items-center justify-center py-24 text-center">
@@ -478,6 +444,9 @@ export default function InstructorsPage() {
               </div>
             ) : (
               <>
+                {/* Debug panel — shows raw fields to diagnose name/field issues */}
+                {showDebug && <DebugPanel instructor={selected} />}
+
                 {/* Week header */}
                 <div className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
                   <div className="flex items-center gap-3 px-4 sm:px-5 py-3">
@@ -485,40 +454,28 @@ export default function InstructorsPage() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-black text-slate-800 truncate">{instructorFullName(selected)}</p>
                       <p className="text-[10px] text-slate-400 font-bold">
-                        {loadingSess
-                          ? "Loading…"
-                          : `${totalWeekSessions} session${totalWeekSessions !== 1 ? "s" : ""} · ${totalWeekHours}h this week`}
+                        {loadingSess ? "Loading…" : `${totalWeekSessions} session${totalWeekSessions!==1?"s":""} · ${totalWeekHours}h this week`}
                       </p>
                     </div>
-
-                    {/* Week nav */}
                     <div className="flex items-center gap-1 ml-auto">
-                      <button onClick={prevWeek} className="h-8 w-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:border-slate-300 transition-all">
-                        <ChevronLeft className="h-3.5 w-3.5" />
-                      </button>
-                      <button onClick={goToday} disabled={isCurrentWeek} className="h-8 px-3 rounded-lg border border-slate-200 text-[10px] font-black uppercase tracking-wide text-slate-500 hover:border-slate-300 hover:text-slate-700 disabled:opacity-30 disabled:pointer-events-none transition-all">
-                        Today
-                      </button>
-                      <button onClick={nextWeek} className="h-8 w-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:border-slate-300 transition-all">
-                        <ChevronRight className="h-3.5 w-3.5" />
-                      </button>
+                      <button onClick={prevWeek} className="h-8 w-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-700 transition-all"><ChevronLeft className="h-3.5 w-3.5" /></button>
+                      <button onClick={goToday} disabled={isCurrentWeek} className="h-8 px-3 rounded-lg border border-slate-200 text-[10px] font-black uppercase tracking-wide text-slate-500 hover:border-slate-300 hover:text-slate-700 disabled:opacity-30 disabled:pointer-events-none transition-all">Today</button>
+                      <button onClick={nextWeek} className="h-8 w-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-700 transition-all"><ChevronRight className="h-3.5 w-3.5" /></button>
                     </div>
-
-                    {/* Print */}
-                    <button
-                      onClick={() => printWeekSchedule(selected, weekDates, sessions)}
-                      disabled={loadingSess}
+                    <button onClick={() => printWeekSchedule(selected, weekDates, sessions)} disabled={loadingSess}
                       className="flex items-center gap-2 h-9 px-4 rounded-xl bg-red-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-red-700 transition-all shadow-sm shadow-red-200 disabled:opacity-40 disabled:pointer-events-none"
                     >
-                      <Printer className="h-3.5 w-3.5" />
-                      <span className="hidden sm:inline">Print Week</span>
+                      <Printer className="h-3.5 w-3.5" /><span className="hidden sm:inline">Print Week</span>
                     </button>
                   </div>
-
                   <div className="px-5 pb-3">
-                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">
-                      {fmtWeekRange(weekStart)}
-                    </p>
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400">{fmtWeekRange(weekStart)}</p>
+                    {/* Show exactly what name is being queried */}
+                    {showDebug && (
+                      <p className="text-[10px] text-amber-600 font-bold mt-1">
+                        Querying sessions for: <span className="font-black">"{instructorQueryName(selected)}"</span>
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -537,12 +494,7 @@ export default function InstructorsPage() {
                   )}
                   <div className="flex gap-2 overflow-x-auto pb-1">
                     {weekDates.map(d => (
-                      <DayColumn
-                        key={toDateStr(d)}
-                        date={d}
-                        sessions={sessionsByDay[toDateStr(d)] ?? []}
-                        isToday={toDateStr(d) === todayStr}
-                      />
+                      <DayColumn key={toDateStr(d)} date={d} sessions={sessionsByDay[toDateStr(d)]??[]} isToday={toDateStr(d)===todayStr} />
                     ))}
                   </div>
                 </div>
@@ -552,22 +504,20 @@ export default function InstructorsPage() {
                   <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400 mb-3">Week Summary</p>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     {[
-                      { label: "Total Sessions", value: totalWeekSessions,        icon: BookOpen },
-                      { label: "Total Hours",    value: `${totalWeekHours}h`,     icon: Clock },
+                      { label: "Total Sessions", value: totalWeekSessions, icon: BookOpen },
+                      { label: "Total Hours",    value: `${totalWeekHours}h`, icon: Clock },
                       { label: "Busiest Day",    value: (() => {
-                          const max = Math.max(...weekDates.map(d => (sessionsByDay[toDateStr(d)] ?? []).length))
+                          const max = Math.max(...weekDates.map(d => (sessionsByDay[toDateStr(d)]??[]).length))
                           if (max === 0) return "—"
-                          const day = weekDates.find(d => (sessionsByDay[toDateStr(d)] ?? []).length === max)
+                          const day = weekDates.find(d => (sessionsByDay[toDateStr(d)]??[]).length === max)
                           return day ? DAY_NAMES[day.getDay()] : "—"
                         })(), icon: Calendar },
-                      { label: "Free Days",      value: weekDates.filter(d =>
-                          (sessionsByDay[toDateStr(d)] ?? []).length === 0 && d.getDay() !== 0 && d.getDay() !== 6
+                      { label: "Free Days", value: weekDates.filter(d =>
+                          (sessionsByDay[toDateStr(d)]??[]).length === 0 && d.getDay()!==0 && d.getDay()!==6
                         ).length, icon: CheckCircle2 },
                     ].map(({ label, value, icon: Icon }) => (
                       <div key={label} className="rounded-xl bg-slate-50 border border-slate-100 p-3">
-                        <div className="h-6 w-6 rounded-lg bg-red-50 flex items-center justify-center mb-2">
-                          <Icon className="h-3 w-3 text-red-500" />
-                        </div>
+                        <div className="h-6 w-6 rounded-lg bg-red-50 flex items-center justify-center mb-2"><Icon className="h-3 w-3 text-red-500" /></div>
                         <p className="text-lg font-black text-slate-800">{loadingSess ? "—" : value}</p>
                         <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mt-0.5">{label}</p>
                       </div>
