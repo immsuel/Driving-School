@@ -10,23 +10,38 @@ const atHeaders = () => ({
 })
 
 // GET /api/sessions?studentName=John+Doe
+// GET /api/sessions?instructorName=Jane+Smith
 // PATCH /api/sessions  { id, fields }
 // POST  /api/sessions  { fields }
 // DELETE /api/sessions?id=recXXXX
 
 export async function GET(req: NextRequest) {
   try {
-    const studentName = req.nextUrl.searchParams.get("studentName")
+    const studentName    = req.nextUrl.searchParams.get("studentName")
+    const instructorName = req.nextUrl.searchParams.get("instructorName")
+
     const url = new URL(`https://api.airtable.com/v0/${BASE}/${TABLE}`)
     url.searchParams.set("pageSize", "100")
+
     if (studentName) {
       url.searchParams.set("filterByFormula", `{Student Name} = "${studentName}"`)
+    } else if (instructorName) {
+      url.searchParams.set("filterByFormula", `{Instructor Name} = "${instructorName}"`)
     }
 
-    const res = await fetch(url.toString(), { headers: atHeaders() })
-    const data = await res.json()
-    if (!res.ok) return NextResponse.json(data, { status: res.status })
-    return NextResponse.json(data)
+    const records: unknown[] = []
+    let offset: string | undefined
+
+    do {
+      if (offset) url.searchParams.set("offset", offset)
+      const res = await fetch(url.toString(), { headers: atHeaders() })
+      const data = await res.json()
+      if (!res.ok) return NextResponse.json(data, { status: res.status })
+      records.push(...(data.records ?? []))
+      offset = data.offset
+    } while (offset)
+
+    return NextResponse.json({ records })
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 })
   }
