@@ -32,6 +32,7 @@ const INDIVIDUAL_VEHICLES = [
 
 const ADVANCE_VEHICLES = [
   { id: "lifestyle",   label: "Lifestyle Driving",              code: "LD", pricePerHour: 300 },
+  { id: "defensive",   label: "Defensive Driving Course",       code: "DD", pricePerHour: 300 },
   { id: "closed-body", label: "Heavy — Closed Body",            code: "CB", pricePerHour: 520 },
   { id: "superlink",   label: "Combination — Super Link",       code: "SL", pricePerHour: 680 },
   { id: "forklift",    label: "Forklift Renewal (On Site)",     code: "FK", pricePerHour: 450 },
@@ -572,7 +573,7 @@ export default function AdminBookingPage() {
   // Derived
   // ---------------------------------------------------------------------------
 
-  const isLifestyleDriving = selectedVehicle?.code === "LD"
+  const isLifestyleDriving = selectedVehicle?.code === "LD" || selectedVehicle?.code === "DD"
   const LD_SESSION_DURATION = 1
   const LD_PRICES: Record<number, number> = { 1: 300, 5: 1500, 10: 3000 }
   const vehiclePrice  = isLifestyleDriving
@@ -646,10 +647,6 @@ export default function AdminBookingPage() {
   }
 
   const removeSession = (i: number) => setSessions(prev => prev.filter((_, idx) => idx !== i))
-
-  // ---------------------------------------------------------------------------
-  // Auto-fill
-  // ---------------------------------------------------------------------------
 
   const previewAutoFill = useCallback(async () => {
     if (!calDate || !selTime || !selectedVehicle || repeatMode === "none") return
@@ -1063,7 +1060,7 @@ export default function AdminBookingPage() {
                     {ADVANCE_VEHICLES.map(v => (
                       <button
                         key={v.id}
-                        onClick={() => { setSelectedVehicle(v); setCalDate(undefined); setSelTime(""); setSessions([]); setSessionInstructors({}); if (v.code === "LD") setHours(0) }}
+                        onClick={() => { setSelectedVehicle(v); setCalDate(undefined); setSelTime(""); setSessions([]); setSessionInstructors({}); if (v.code === "LD" || v.code === "DD") setHours(0) }}
                         className={`flex items-center justify-between px-3 py-3 rounded-xl border text-left transition-all ${
                           selectedVehicle?.id === v.id
                             ? "border-red-600 bg-red-50 text-red-700 ring-1 ring-red-600"
