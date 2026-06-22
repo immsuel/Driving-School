@@ -32,7 +32,7 @@ const INDIVIDUAL_VEHICLES = [
 
 const ADVANCE_VEHICLES = [
   { id: "lifestyle",   label: "Lifestyle Driving",              code: "LD", pricePerHour: 300 },
-  { id: "defensive",   label: "Defensive Driving Course",       code: "DD", pricePerHour: 300 },
+  { id: "defensive",   label: "Defensive Driving",       code: "DD", pricePerHour: 300 },
   { id: "closed-body", label: "Heavy — Closed Body",            code: "CB", pricePerHour: 520 },
   { id: "superlink",   label: "Combination — Super Link",       code: "SL", pricePerHour: 680 },
   { id: "forklift",    label: "Forklift Renewal (On Site)",     code: "FK", pricePerHour: 450 },
