@@ -22,6 +22,7 @@ const LICENSE_TYPE_MAP: Record<string, string> = {
   "10":   "Code 10",
   "Spec": "Code 8 Manual", 
   "LD":   "Lifestyle Driving",
+  "DD":   "Defensive Driving",
 }
 
 const DAY_LABELS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"]
